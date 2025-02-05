@@ -91,7 +91,7 @@ int main(void)
         if (tokenizedQuery.front() == "SOURCE")
         {
             // Source command implementation
-            string file_name = tokenizedQuery.back();
+            string file_name = tokenizedQuery.back() + ".ra";
             ifstream file(file_name);
             if (!file.is_open())
             {
