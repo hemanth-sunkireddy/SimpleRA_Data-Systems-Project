@@ -22,7 +22,15 @@ Page BufferManager::getPage(string tableName, int pageIndex)
     else
         return this->insertIntoPool(tableName, pageIndex);
 }
-
+Page BufferManager::getPage(string tableName, string pageIndex)
+{
+    logger.log("BufferManager::getPage");
+    string pageName = "../data/temp/"+tableName + "_Page" + (pageIndex);
+    if (this->inPool(pageName))
+        return this->getFromPool(pageName);
+    else
+        return this->insertIntoPool(tableName, stoi(pageIndex));
+}
 /**
  * @brief Checks to see if a page exists in the pool
  *
@@ -91,7 +99,12 @@ void BufferManager::writePage(string tableName, int pageIndex, vector<vector<int
     Page page(tableName, pageIndex, rows, rowCount);
     page.writePage();
 }
-
+void BufferManager::writePage(string tableName, string pageIndex, vector<vector<int>> rows, int rowCount)
+{
+    logger.log("BufferManager::writePage");
+    Page page(tableName, pageIndex, rows, rowCount);
+    page.writePage();
+}
 /**
  * @brief Deletes file names fileName
  *

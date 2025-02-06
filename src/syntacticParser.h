@@ -1,5 +1,5 @@
 #include "tableCatalogue.h"
-
+// #include "matrixCatalogue.h"
 using namespace std;
 
 enum QueryType
@@ -18,7 +18,12 @@ enum QueryType
     SELECTION,
     SORT,
     SOURCE,
-    UNDETERMINED
+    UNDETERMINED,
+
+    //matrix
+    LOAD_MATRIX,
+    PRINT_MATRIX,
+    EXPORT_MATRIX,
 };
 
 enum BinaryOperator
@@ -64,6 +69,7 @@ public:
     string exportRelationName = "";
 
     IndexingStrategy indexingStrategy = NOTHING;
+    // IndexingStrategy1 indexingStrategy1 = NOTHING1;
     string indexColumnName = "";
     string indexRelationName = "";
 
@@ -75,7 +81,7 @@ public:
     string joinSecondColumnName = "";
 
     string loadRelationName = "";
-
+    string loadMatrixName = "";
     string printRelationName = "";
 
     string projectionResultRelationName = "";
@@ -85,6 +91,7 @@ public:
     string renameFromColumnName = "";
     string renameToColumnName = "";
     string renameRelationName = "";
+    string newRenameRelationName = "";
 
     SelectType selectType = NO_SELECT_CLAUSE;
     BinaryOperator selectionBinaryOperator = NO_BINOP_CLAUSE;
@@ -120,6 +127,11 @@ bool syntacticParseRENAME();
 bool syntacticParseSELECTION();
 bool syntacticParseSORT();
 bool syntacticParseSOURCE();
+
+//matrix
+bool syntacticParseLOADMATRIX();
+bool syntacticParsePRINTMATRIX();
+bool syntacticParseEXPORTMATRIX();
 
 bool isFileExists(string tableName);
 bool isQueryFile(string fileName);

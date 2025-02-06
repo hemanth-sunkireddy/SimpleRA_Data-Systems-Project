@@ -16,12 +16,43 @@ bool syntacticParseLOAD()
     return true;
 }
 
+bool syntacticParseLOADMATRIX()
+{
+    logger.log("syntacticParseLOADMATRIX");
+    if (tokenizedQuery.size() != 3)
+    {
+        cout << "SYNTAX ERROR" << endl;
+        return false;
+    }
+    parsedQuery.queryType = LOAD_MATRIX;
+    parsedQuery.loadRelationName = tokenizedQuery[2];
+    return true;
+}
+
 bool semanticParseLOAD()
 {
     logger.log("semanticParseLOAD");
     if (tableCatalogue.isTable(parsedQuery.loadRelationName))
     {
         cout << "SEMANTIC ERROR: Relation already exists" << endl;
+        return false;
+    }
+
+    if (!isFileExists(parsedQuery.loadRelationName))
+    {
+        cout << "SEMANTIC ERROR: Data file doesn't exist" << endl;
+        return false;
+    }
+    return true;
+}
+
+
+bool semanticParseLOADMATRIX()
+{
+    logger.log("semanticParseLOADMATRIX");
+    if (tableCatalogue.isTable(parsedQuery.loadRelationName))
+    {
+        cout << "SEMANTIC ERROR: Matrix already exists" << endl;
         return false;
     }
 
@@ -42,6 +73,21 @@ void executeLOAD()
     {
         tableCatalogue.insertTable(table);
         cout << "Loaded Table. Column Count: " << table->columnCount << " Row Count: " << table->rowCount << endl;
+    }
+    return;
+}
+
+void executeLOADMATRIX()
+{
+    logger.log("executeLOADMATRIX");
+
+    Table *table = new Table(parsedQuery.loadRelationName);
+    if (table->loadMatrix())
+    {
+    
+        // table->firstName = table->tableName;
+        tableCatalogue.insertTable(table);
+        cout << "Loaded Matrix. Column Count: " << table->columnCount << " Row Count: " << table->rowCount << endl;
     }
     return;
 }

@@ -18,14 +18,28 @@ bool syntacticParse()
     else if (possibleQueryType == "LIST")
         return syntacticParseLIST();
     else if (possibleQueryType == "LOAD")
+    {
+        if (tokenizedQuery[1] == "MATRIX")
+            return syntacticParseLOADMATRIX();
         return syntacticParseLOAD();
+    }
     else if (possibleQueryType == "PRINT")
+    {
+        if (tokenizedQuery[1] == "MATRIX")
+            return syntacticParsePRINTMATRIX();
         return syntacticParsePRINT();
+    }
     else if (possibleQueryType == "RENAME")
+    {
         return syntacticParseRENAME();
-    else if(possibleQueryType == "EXPORT")
+    }
+    else if (possibleQueryType == "EXPORT")
+    {
+        if (tokenizedQuery[1] == "MATRIX")
+            return syntacticParseEXPORTMATRIX();
         return syntacticParseEXPORT();
-    else if(possibleQueryType == "SOURCE")
+    }
+    else if (possibleQueryType == "SOURCE")
         return syntacticParseSOURCE();
     else
     {
@@ -120,9 +134,9 @@ void ParsedQuery::clear()
  * @brief Checks to see if source file exists. Called when LOAD command is
  * invoked.
  *
- * @param tableName 
- * @return true 
- * @return false 
+ * @param tableName
+ * @return true
+ * @return false
  */
 bool isFileExists(string tableName)
 {
@@ -135,11 +149,12 @@ bool isFileExists(string tableName)
  * @brief Checks to see if source file exists. Called when SOURCE command is
  * invoked.
  *
- * @param tableName 
- * @return true 
- * @return false 
+ * @param tableName
+ * @return true
+ * @return false
  */
-bool isQueryFile(string fileName){
+bool isQueryFile(string fileName)
+{
     fileName = "../data/" + fileName + ".ra";
     struct stat buffer;
     return (stat(fileName.c_str(), &buffer) == 0);
