@@ -65,6 +65,8 @@ public:
     int getColumnIndex(string columnName);
     void unload();
 
+    // Rotate Matrix
+    void rotateMatrix();
     /**
      * @brief Static function that takes a vector of valued and prints them out in a
      * comma seperated format.

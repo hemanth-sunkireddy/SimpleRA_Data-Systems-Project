@@ -31,6 +31,20 @@ bool syntacticParseEXPORTMATRIX()
     return true;
 }
 
+// ROTATE MATRIX
+bool syntacticParseROTATEMATRIX()
+{
+    logger.log("syntacticParseROTATEMATRIX");
+    if (tokenizedQuery.size() != 3)
+    {
+        cout << "SYNTAX ERROR, please give ROTATE MATRIX A" << endl;
+        return false;
+    }
+    parsedQuery.queryType = ROTATE_MATRIX;
+    parsedQuery.exportRelationName = tokenizedQuery[2];
+    return true;
+}
+
 
 bool semanticParseEXPORT()
 {
@@ -54,6 +68,16 @@ bool semanticParseEXPORTMATRIX()
     return false;
 }
 
+bool semanticParseROTATEMATRIX()
+{
+    logger.log("semanticParseROTATEMATRIX");
+    //Table should exist
+    if (tableCatalogue.isTable(parsedQuery.exportRelationName))
+        return true;
+    cout << "SEMANTIC ERROR: No such relation exists" << endl;
+    return false;
+}
+
 
 
 void executeEXPORT()
@@ -69,5 +93,13 @@ void executeEXPORTMATRIX()
     logger.log("executeEXPORTMARIX");
     Table* table = tableCatalogue.getTable(parsedQuery.exportRelationName);
     table->makePermanentMatrix();
+    return;
+}
+
+void executeROTATEMATRIX()
+{
+    logger.log("executeROTATEMARIX");
+    Table* table = tableCatalogue.getTable(parsedQuery.exportRelationName);
+    table->rotateMatrix();
     return;
 }

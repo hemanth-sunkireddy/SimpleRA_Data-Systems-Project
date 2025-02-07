@@ -60,6 +60,9 @@ void executeCommand()
     case EXPORT_MATRIX:
         executeEXPORTMATRIX();
         break;
+    case ROTATE_MATRIX:
+        executeROTATEMATRIX();
+        break;
     default:
         cout << "PARSING ERROR" << endl;
     }

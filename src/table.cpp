@@ -577,6 +577,177 @@ void Table::makePermanentMatrix()
 //     fout.close();
 // }
 
+
+void Table::rotateMatrix() {
+    int blockRead = 0, blockWritten = 0;
+    cout << "ROTATING MATRIX" << endl;
+    cout << "COLUMN COUNT: " << columnCount << " " << "ROW COUNT: " << rowCount << endl;
+
+    int row = 0, col = 0;
+    int prev, curr;
+
+    // Rotate the matrix in layers
+    while (row < rowCount && col < columnCount) {
+        if (row == rowCount || col + 1 == columnCount)
+            break;
+        int page_number = 0;
+        // Store the first element of the next row (this will be moved)
+        string filePath = "../data/temp/" + this->tableName + "_Page" + to_string(page_number) + "_" + to_string(page_number);
+        cout << filePath << endl;
+        vector<vector<int>> vec;
+        ifstream inputFile(filePath);
+        
+        blockRead++;
+        if (!inputFile.is_open()) {
+            cerr << "Error: Could not open file " << filePath << endl;
+            return;  // Handle error case
+        }
+
+        string line;
+        while (getline(inputFile, line)) {
+            vector<int> rowData;
+            istringstream iss(line);
+            int value;
+            while (iss >> value) {
+                rowData.push_back(value);
+            }
+            vec.push_back(rowData);
+        }
+        inputFile.close();
+        prev = vec[0][0];  // Assuming the matrix contains one element per row and column
+
+        // Move elements of the first row (top row)
+        for (int i = col; i < columnCount; i++) {
+            filePath = "../data/temp/" + this->tableName + "_Page" + to_string(page_number) + "_" + to_string(page_number);
+            inputFile.open(filePath);
+
+            blockRead++;
+            if (!inputFile.is_open()) {
+                cerr << "Error: Could not open file " << filePath << endl;
+                return;  // Handle error case
+            }
+
+            while (getline(inputFile, line)) {
+                vector<int> rowData;
+                istringstream iss(line);
+                int value;
+                while (iss >> value) {
+                    rowData.push_back(value);
+                }
+                vec.push_back(rowData);
+            }
+            inputFile.close();
+
+            curr = vec[0][0];
+            ofstream outputFile(filePath, ios::out | ios::trunc);
+            blockWritten++;
+            outputFile << prev << endl;
+            prev = curr;
+        }
+        row++;
+
+        // Move elements of the last column
+        for (int i = row; i < rowCount; i++) {
+            filePath = "../data/temp/" + this->tableName + "_Page" + to_string(page_number) + "_" + to_string(page_number);
+            inputFile.open(filePath);
+
+            blockRead++;
+            if (!inputFile.is_open()) {
+                cerr << "Error: Could not open file " << filePath << endl;
+                return;  // Handle error case
+            }
+
+            while (getline(inputFile, line)) {
+                vector<int> rowData;
+                istringstream iss(line);
+                int value;
+                while (iss >> value) {
+                    rowData.push_back(value);
+                }
+                vec.push_back(rowData);
+            }
+            inputFile.close();
+
+            curr = vec[0][0];
+            ofstream outputFile(filePath, ios::out | ios::trunc);
+            blockWritten++;
+            outputFile << prev << endl;
+            prev = curr;
+        }
+        columnCount--; // Shrink the number of columns
+
+        // Move elements of the last row
+        if (row < rowCount) {
+            for (int i = columnCount - 1; i >= col; i--) {
+                filePath = "../data/temp/" + this->tableName + "_Page" + to_string(page_number) + "_" + to_string(page_number);
+                inputFile.open(filePath);
+
+                blockRead++;
+                if (!inputFile.is_open()) {
+                    cerr << "Error: Could not open file " << filePath << endl;
+                    return;  // Handle error case
+                }
+
+                while (getline(inputFile, line)) {
+                    vector<int> rowData;
+                    istringstream iss(line);
+                    int value;
+                    while (iss >> value) {
+                        rowData.push_back(value);
+                    }
+                    vec.push_back(rowData);
+                }
+                inputFile.close();
+
+                curr = vec[0][0];
+                ofstream outputFile(filePath, ios::out | ios::trunc);
+                blockWritten++;
+                outputFile << prev << endl;
+                prev = curr;
+            }
+        }
+        rowCount--; // Shrink the number of rows
+
+        // Move elements of the first column
+        if (col < columnCount) {
+            for (int i = rowCount - 1; i >= row; i--) {
+                filePath = "../data/temp/" + this->tableName + "_Page" + to_string(page_number) + "_" + to_string(page_number);
+                inputFile.open(filePath);
+
+                blockRead++;
+                if (!inputFile.is_open()) {
+                    cerr << "Error: Could not open file " << filePath << endl;
+                    return;  // Handle error case
+                }
+
+                while (getline(inputFile, line)) {
+                    vector<int> rowData;
+                    istringstream iss(line);
+                    int value;
+                    while (iss >> value) {
+                        rowData.push_back(value);
+                    }
+                    vec.push_back(rowData);
+                }
+                inputFile.close();
+
+                curr = vec[0][0];
+                ofstream outputFile(filePath, ios::out | ios::trunc);
+                blockWritten++;
+                outputFile << prev << endl;
+                prev = curr;
+            }
+        }
+        col++; // Move to the next column for the next layer
+    }
+
+    cout << "Number of blocks read: " << blockRead << endl;
+    cout << "Number of blocks written: " << blockWritten << endl;
+    cout << "Number of blocks accessed: " << blockRead + blockWritten << endl;
+}
+
+
+
 /**
  * @brief Function to check if table is already exported
  *

@@ -24,6 +24,7 @@ enum QueryType
     LOAD_MATRIX,
     PRINT_MATRIX,
     EXPORT_MATRIX,
+    ROTATE_MATRIX,
 };
 
 enum BinaryOperator
@@ -132,6 +133,7 @@ bool syntacticParseSOURCE();
 bool syntacticParseLOADMATRIX();
 bool syntacticParsePRINTMATRIX();
 bool syntacticParseEXPORTMATRIX();
+bool syntacticParseROTATEMATRIX();
 
 bool isFileExists(string tableName);
 bool isQueryFile(string fileName);
