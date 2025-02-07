@@ -45,6 +45,20 @@ bool syntacticParseROTATEMATRIX()
     return true;
 }
 
+// CROSS TRANSPOSE MATRIX
+bool syntacticParseCROSSTRANSPOSE()
+{
+    logger.log("syntacticParseROTATEMATRIX");
+    if (tokenizedQuery.size() != 3)
+    {
+        cout << "SYNTAX ERROR, please give CROSSTRANPOSE A B" << endl;
+        return false;
+    }
+    parsedQuery.queryType = CROSSTRANSPOSE_MATRIX;
+    parsedQuery.exportRelationName = tokenizedQuery[2];
+    return true;
+}
+
 
 bool semanticParseEXPORT()
 {
@@ -78,6 +92,16 @@ bool semanticParseROTATEMATRIX()
     return false;
 }
 
+bool semanticParseCROSSTRANSPOSEMATRIX()
+{
+    logger.log("semanticParseROTATEMATRIX");
+    //Table should exist
+    if (tableCatalogue.isTable(parsedQuery.exportRelationName))
+        return true;
+    cout << "SEMANTIC ERROR: No such relation exists" << endl;
+    return false;
+}
+
 
 
 void executeEXPORT()
@@ -101,5 +125,13 @@ void executeROTATEMATRIX()
     logger.log("executeROTATEMARIX");
     Table* table = tableCatalogue.getTable(parsedQuery.exportRelationName);
     table->rotateMatrix();
+    return;
+}
+
+void executeCROSSTRANSPOSEMATRIX()
+{
+    logger.log("executeCROSSTRANSPOSEMARIX");
+    Table* table = tableCatalogue.getTable(parsedQuery.exportRelationName);
+    table->crossTransposeMatrix();
     return;
 }

@@ -67,6 +67,11 @@ public:
 
     // Rotate Matrix
     void rotateMatrix();
+    void writePageData(const string &tablename, int pageRow, int pageCol, 
+        const vector<vector<int>> &data);
+    // Cross Transpose Matrix
+    void crossTransposeMatrix();
+
     /**
      * @brief Static function that takes a vector of valued and prints them out in a
      * comma seperated format.

@@ -577,173 +577,111 @@ void Table::makePermanentMatrix()
 //     fout.close();
 // }
 
+void Table::writePageData(const string &tablename, int pageRow, int pageCol, 
+    const vector<vector<int>> &data)
+{
+string filename = "../data/temp/" + tablename + "_Page" + 
+to_string(pageRow) + "_" + to_string(pageCol);
+ofstream outputFile(filename);
+if (!outputFile.is_open()) {
+logger.log("Failed to open page file for writing: " + filename);
+return;
+}
+for (const auto &row : data) {
+for (size_t k = 0; k < row.size(); k++) {
+outputFile << row[k];
+if (k != row.size() - 1)
+outputFile << " ";
+}
+outputFile << "\n";
+}
+outputFile.close();
+}
+
+const int PAGE_ROW_SIZE = 15;
+const int PAGE_COL_SIZE = 20;
 
 void Table::rotateMatrix() {
-    int blockRead = 0, blockWritten = 0;
-    cout << "ROTATING MATRIX" << endl;
-    cout << "COLUMN COUNT: " << columnCount << " " << "ROW COUNT: " << rowCount << endl;
-
-    int row = 0, col = 0;
-    int prev, curr;
-
-    // Rotate the matrix in layers
-    while (row < rowCount && col < columnCount) {
-        if (row == rowCount || col + 1 == columnCount)
-            break;
-        int page_number = 0;
-        // Store the first element of the next row (this will be moved)
-        string filePath = "../data/temp/" + this->tableName + "_Page" + to_string(page_number) + "_" + to_string(page_number);
-        cout << filePath << endl;
-        vector<vector<int>> vec;
-        ifstream inputFile(filePath);
-        
-        blockRead++;
-        if (!inputFile.is_open()) {
-            cerr << "Error: Could not open file " << filePath << endl;
-            return;  // Handle error case
-        }
-
-        string line;
-        while (getline(inputFile, line)) {
-            vector<int> rowData;
-            istringstream iss(line);
-            int value;
-            while (iss >> value) {
-                rowData.push_back(value);
-            }
-            vec.push_back(rowData);
-        }
-        inputFile.close();
-        prev = vec[0][0];  // Assuming the matrix contains one element per row and column
-
-        // Move elements of the first row (top row)
-        for (int i = col; i < columnCount; i++) {
-            filePath = "../data/temp/" + this->tableName + "_Page" + to_string(page_number) + "_" + to_string(page_number);
-            inputFile.open(filePath);
-
-            blockRead++;
-            if (!inputFile.is_open()) {
-                cerr << "Error: Could not open file " << filePath << endl;
-                return;  // Handle error case
-            }
-
-            while (getline(inputFile, line)) {
-                vector<int> rowData;
-                istringstream iss(line);
-                int value;
-                while (iss >> value) {
-                    rowData.push_back(value);
-                }
-                vec.push_back(rowData);
-            }
-            inputFile.close();
-
-            curr = vec[0][0];
-            ofstream outputFile(filePath, ios::out | ios::trunc);
-            blockWritten++;
-            outputFile << prev << endl;
-            prev = curr;
-        }
-        row++;
-
-        // Move elements of the last column
-        for (int i = row; i < rowCount; i++) {
-            filePath = "../data/temp/" + this->tableName + "_Page" + to_string(page_number) + "_" + to_string(page_number);
-            inputFile.open(filePath);
-
-            blockRead++;
-            if (!inputFile.is_open()) {
-                cerr << "Error: Could not open file " << filePath << endl;
-                return;  // Handle error case
-            }
-
-            while (getline(inputFile, line)) {
-                vector<int> rowData;
-                istringstream iss(line);
-                int value;
-                while (iss >> value) {
-                    rowData.push_back(value);
-                }
-                vec.push_back(rowData);
-            }
-            inputFile.close();
-
-            curr = vec[0][0];
-            ofstream outputFile(filePath, ios::out | ios::trunc);
-            blockWritten++;
-            outputFile << prev << endl;
-            prev = curr;
-        }
-        columnCount--; // Shrink the number of columns
-
-        // Move elements of the last row
-        if (row < rowCount) {
-            for (int i = columnCount - 1; i >= col; i--) {
-                filePath = "../data/temp/" + this->tableName + "_Page" + to_string(page_number) + "_" + to_string(page_number);
-                inputFile.open(filePath);
-
-                blockRead++;
-                if (!inputFile.is_open()) {
-                    cerr << "Error: Could not open file " << filePath << endl;
-                    return;  // Handle error case
-                }
-
-                while (getline(inputFile, line)) {
-                    vector<int> rowData;
-                    istringstream iss(line);
-                    int value;
-                    while (iss >> value) {
-                        rowData.push_back(value);
-                    }
-                    vec.push_back(rowData);
-                }
-                inputFile.close();
-
-                curr = vec[0][0];
-                ofstream outputFile(filePath, ios::out | ios::trunc);
-                blockWritten++;
-                outputFile << prev << endl;
-                prev = curr;
-            }
-        }
-        rowCount--; // Shrink the number of rows
-
-        // Move elements of the first column
-        if (col < columnCount) {
-            for (int i = rowCount - 1; i >= row; i--) {
-                filePath = "../data/temp/" + this->tableName + "_Page" + to_string(page_number) + "_" + to_string(page_number);
-                inputFile.open(filePath);
-
-                blockRead++;
-                if (!inputFile.is_open()) {
-                    cerr << "Error: Could not open file " << filePath << endl;
-                    return;  // Handle error case
-                }
-
-                while (getline(inputFile, line)) {
-                    vector<int> rowData;
-                    istringstream iss(line);
-                    int value;
-                    while (iss >> value) {
-                        rowData.push_back(value);
-                    }
-                    vec.push_back(rowData);
-                }
-                inputFile.close();
-
-                curr = vec[0][0];
-                ofstream outputFile(filePath, ios::out | ios::trunc);
-                blockWritten++;
-                outputFile << prev << endl;
-                prev = curr;
-            }
-        }
-        col++; // Move to the next column for the next layer
+     // For an in–place rotation, the matrix must be square.
+     if (this->rowCount != this->columnCount) {
+        logger.log("rotateMatrix: Non-square matrix; rotation not supported.");
+        return;
     }
+    
+    int n = this->rowCount;  // global matrix size (n x n)
 
-    cout << "Number of blocks read: " << blockRead << endl;
-    cout << "Number of blocks written: " << blockWritten << endl;
-    cout << "Number of blocks accessed: " << blockRead + blockWritten << endl;
+    // Loop over each “layer” (from outermost to inner)
+    for (int layer = 0; layer < n / 2; layer++) {
+        int first = layer;
+        int last = n - layer - 1;
+
+        // For each element in the current layer (except the last, which is the pivot)
+        for (int i = first; i < last; i++) {
+            int offset = i - first;
+            
+            // The 4 global coordinates in the 4–cell cycle:
+            //   A (top):    (first, i)
+            //   B (right):  (i, last)
+            //   C (bottom): (last, last - offset)
+            //   D (left):   (last - offset, first)
+            int A_row = first,        A_col = i;
+            int B_row = i,            B_col = last;
+            int C_row = last,         C_col = last - offset;
+            int D_row = last - offset, D_col = first;
+
+            // Compute the page keys and local coordinates for each cell.
+            // Global cell (r,c) is in page:
+            //      pageRow = r / PAGE_ROW_SIZE, pageCol = c / PAGE_COL_SIZE,
+            //   with local indices (r % PAGE_ROW_SIZE, c % PAGE_COL_SIZE)
+            pair<int,int> keyA = { A_row / PAGE_ROW_SIZE, A_col / PAGE_COL_SIZE };
+            int localA_row = A_row % PAGE_ROW_SIZE, localA_col = A_col % PAGE_COL_SIZE;
+            
+            pair<int,int> keyB = { B_row / PAGE_ROW_SIZE, B_col / PAGE_COL_SIZE };
+            int localB_row = B_row % PAGE_ROW_SIZE, localB_col = B_col % PAGE_COL_SIZE;
+            
+            pair<int,int> keyC = { C_row / PAGE_ROW_SIZE, C_col / PAGE_COL_SIZE };
+            int localC_row = C_row % PAGE_ROW_SIZE, localC_col = C_col % PAGE_COL_SIZE;
+            
+            pair<int,int> keyD = { D_row / PAGE_ROW_SIZE, D_col / PAGE_COL_SIZE };
+            int localD_row = D_row % PAGE_ROW_SIZE, localD_col = D_col % PAGE_COL_SIZE;
+            
+            // We'll use a temporary cache to hold up to 4 pages.
+            // (The key is a pair: (pageRow, pageCol).)
+            map<pair<int,int>, vector<vector<int>>> pageCache;
+            
+            // A small lambda to load a page into the cache if it isn’t already there.
+            auto loadPage = [this, &pageCache](const pair<int,int>& key) {
+                if (pageCache.find(key) == pageCache.end()) {
+                    // key.first is the page row, key.second is the page column.
+                    pageCache[key] = this->getPageData(this->tableName, key.first, key.second);
+                }
+            };
+            
+            loadPage(keyA);
+            loadPage(keyB);
+            loadPage(keyC);
+            loadPage(keyD);
+            
+            // Now perform the 4–way rotation:
+            //   Save A; then A = D; D = C; C = B; B = saved A.
+            int temp = pageCache[keyA][localA_row][localA_col];
+            pageCache[keyA][localA_row][localA_col] = pageCache[keyD][localD_row][localD_col];
+            pageCache[keyD][localD_row][localD_col] = pageCache[keyC][localC_row][localC_col];
+            pageCache[keyC][localC_row][localC_col] = pageCache[keyB][localB_row][localB_col];
+            pageCache[keyB][localB_row][localB_col] = temp;
+            
+            // Write all pages that were modified back to disk.
+            for (auto &entry : pageCache) {
+                pair<int,int> key = entry.first;
+                writePageData(this->tableName, key.first, key.second, entry.second);
+            }
+        } // end for (i in layer)
+    } // end for (each layer)
+}
+
+void Table::crossTransposeMatrix() {
+    // Cross Transpose Matrix Code Here
+    cout << "CROSS TRANSPOSE IMPLEMENTATION SOON" << endl;
 }
 
 

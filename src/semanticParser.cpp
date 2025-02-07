@@ -23,6 +23,7 @@ bool semanticParse(){
         case PRINT_MATRIX: return semanticParsePRINTMATRIX();
         case EXPORT_MATRIX: return semanticParseEXPORTMATRIX();
         case ROTATE_MATRIX: return semanticParseROTATEMATRIX();
+        case CROSSTRANSPOSE_MATRIX: return semanticParseCROSSTRANSPOSEMATRIX();
         default: cout<<"SEMANTIC ERROR"<<endl;
     }
 

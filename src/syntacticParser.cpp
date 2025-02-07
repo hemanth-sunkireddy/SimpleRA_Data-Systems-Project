@@ -43,6 +43,8 @@ bool syntacticParse()
         return syntacticParseSOURCE();
     else if(possibleQueryType == "ROTATE")
         return syntacticParseROTATEMATRIX();
+    else if(possibleQueryType == "CROSSTRANSPOSE")
+        return syntacticParseCROSSTRANSPOSE();
     else
     {
         string resultantRelationName = possibleQueryType;

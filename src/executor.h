@@ -22,6 +22,7 @@ void executeLOADMATRIX();
 void executePRINTMATRIX();
 void executeEXPORTMATRIX();
 void executeROTATEMATRIX();
+void executeCROSSTRANSPOSEMATRIX();
 
 
 bool evaluateBinOp(int value1, int value2, BinaryOperator binaryOperator);
