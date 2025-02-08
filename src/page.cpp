@@ -57,25 +57,61 @@ Page::Page(string tableName, int pageIndex, int is_matrix)
     this->tableName = tableName;
     this->pageIndex = pageIndex;
     this->pageName = "../data/temp/" + this->tableName + "_Page" + to_string(pageIndex);
-    Matrix matrix = *matrixCatalogue.getmatrix(tableName);
+
+    // Check if matrix exists
+    Matrix* matrixPtr = matrixCatalogue.getmatrix(tableName);
+    if (!matrixPtr) {
+        cerr << "Error: Matrix not found in catalogue." << endl;
+        return;
+    }
+    Matrix matrix = *matrixPtr;
+
     this->columnCount = matrix.columnCount;
     uint maxRowCount = matrix.maxRowsPerBlock;
+
+    // Ensure columnCount and maxRowCount are valid
+    if (columnCount <= 0 || maxRowCount <= 0) {
+        cerr << "Error: Invalid matrix dimensions (columns: " << columnCount 
+             << ", max rows per block: " << maxRowCount << ")." << endl;
+        return;
+    }
+
+    // Initialize rows
     vector<int> row(columnCount, 0);
     this->rows.assign(maxRowCount, row);
 
+    // Open file and check if successful
     ifstream fin(pageName, ios::in);
+    if (!fin.is_open()) {
+        cerr << "Error: Unable to open file " << pageName << endl;
+        return;
+    }
+
+    // Ensure pageIndex is within bounds
+    if (pageIndex >= matrix.rowsPerBlockCount.size()) {
+        cerr << "Error: pageIndex out of bounds for rowsPerBlockCount." << endl;
+        return;
+    }
+
     this->rowCount = matrix.rowsPerBlockCount[pageIndex];
+
     int number;
     for (uint rowCounter = 0; rowCounter < this->rowCount; rowCounter++)
     {
         for (int columnCounter = 0; columnCounter < columnCount; columnCounter++)
         {
-            fin >> number;
+            if (!(fin >> number)) {
+                cerr << "Error: Not enough data in file or incorrect format at row " 
+                     << rowCounter << ", column " << columnCounter << "." << endl;
+                return;
+            }
             this->rows[rowCounter][columnCounter] = number;
         }
     }
+
     fin.close();
 }
+
 
 /**
  * @brief Get row from page indexed by rowIndex

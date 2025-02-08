@@ -63,6 +63,7 @@ void executePRINT_MATRIX()
 {
     logger.log("executePRINT_MATRIX");
     Matrix* matrix = matrixCatalogue.getmatrix(parsedQuery.printRelationName);
+    cout << "GOT MATRIX : " << matrix->matrixname << "FILE : " << matrix->sourceFileName << endl;
     matrix -> print();
     return;
 }
