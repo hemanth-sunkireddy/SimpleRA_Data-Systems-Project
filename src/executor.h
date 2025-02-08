@@ -19,6 +19,7 @@ void executeRENAME();
 void executeSELECTION();
 void executeSORT();
 void executeSOURCE();
+void executeROTATE_MATRIX();
 
 bool evaluateBinOp(int value1, int value2, BinaryOperator binaryOperator);
 void printRowCount(int rowCount);

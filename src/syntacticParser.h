@@ -21,6 +21,7 @@ enum QueryType
     SELECTION,
     SORT,
     SOURCE,
+    ROTATE_MATRIX,
     UNDETERMINED
 };
 
@@ -80,6 +81,7 @@ public:
     string loadRelationName = "";
 
     string printRelationName = "";
+    string rotateRelationName = "";
 
     string projectionResultRelationName = "";
     vector<string> projectionColumnList;
@@ -126,6 +128,7 @@ bool syntacticParseRENAME();
 bool syntacticParseSELECTION();
 bool syntacticParseSORT();
 bool syntacticParseSOURCE();
+bool syntacticParseROTATE_MATRIX();
 
 bool isFileExists(string tableName);
 bool isQueryFile(string fileName);

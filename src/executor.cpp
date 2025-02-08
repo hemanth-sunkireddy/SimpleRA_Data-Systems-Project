@@ -20,6 +20,7 @@ void executeCommand(){
         case SELECTION: executeSELECTION(); break;
         case SORT: executeSORT(); break;
         case SOURCE: executeSOURCE(); break;
+        case ROTATE_MATRIX: executeROTATE_MATRIX(); break;
         default: cout<<"PARSING ERROR"<<endl;
     }
 

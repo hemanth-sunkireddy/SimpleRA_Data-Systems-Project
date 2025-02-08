@@ -19,3 +19,4 @@ bool semanticParseRENAME();
 bool semanticParseSELECTION();
 bool semanticParseSORT();
 bool semanticParseSOURCE();
+bool semanticParseROTATE_MATRIX();

@@ -317,7 +317,7 @@ void Table::print()
     //print headings
     this->writeRow(this->columns, cout);
 
-    Cursor cursor(this->tableName, 0, 1);
+    Cursor cursor(this->tableName, 0);
     vector<int> row;
     for (int rowCounter = 0; rowCounter < count; rowCounter++)
     {
@@ -341,6 +341,86 @@ void Matrix::print()
     printRowCount(this -> rowCount);
 }
 
+void Matrix::rotate()
+{
+    // write code here!
+    int row_i = 3, col_j = 3;
+    int elem = this -> get_element(row_i, col_j);
+    cout << "Element of 3 x 3 = " << elem << endl;
+    elem = 69;
+    this -> set_element(row_i, col_j, elem);
+    cout << "Element set at 3 x 3" << endl;
+}
+
+int Matrix::get_element(int i, int j)
+{
+    logger.log("Matrix :: get_element");
+    uint count = min((long long) PRINT_COUNT, this -> rowCount);
+
+    Cursor cursor(this -> matrixname, 0, 1);
+    vector<int> row;
+    for (int rowCounter = 0; rowCounter < count && rowCounter < i; rowCounter++)
+    {
+        row = cursor.getNext();
+    }
+    row = cursor.getNext();
+
+    // now we need to get the jth element from the row.
+    return row[j];
+}
+
+// void Matrix::set_element(int i, int j, int elem)
+// {
+//     logger.log("Matrix :: set element");
+//     uint count = min((long long) PRINT_COUNT, this -> rowCount);
+
+//     Cursor cursor (this->matrixname, 0, 1);
+//     vector<int> row;
+//     for (int rowCounter = 0; rowCounter < count && rowCounter < i; rowCounter++)
+//     {
+//         row = cursor.getNext();
+//     }
+//     row = cursor.getNext();
+//     row[j] = elem;
+//     // Write code to store this row!!!
+// }
+
+void Matrix::set_element(int i, int j, int elem)
+{
+    logger.log("Matrix::set_element");
+    // uint count = min((long long)PRINT_COUNT, this->rowCount);
+    int currentRow = 0;
+    // Now we need to write this modified row back to the correct page
+    int rowsPerPage = this->maxRowsPerBlock;
+    int pageIndex = i / rowsPerPage;
+    int rowIndexInPage = i % rowsPerPage;
+
+    // Retrieve the current page data from BufferManager
+    Page page = bufferManager.getPage(this->matrixname, pageIndex, 1);  // '1' indicating matrix
+    // cout << "HEY : " << page.pageName << endl;
+
+    //     // Get the specific row, modify the element
+    vector<int> row = page.getRow(rowIndexInPage);
+    // cout << "This is the row" << row[j] << "and" << row[j+1] << endl;
+    //     cout << "in place : " << row[j] << endl;
+    row[j] = 93;
+
+    //     // Update the row in the page
+    page.rows[rowIndexInPage] = row;
+
+    //     // Write the modified page back to storage
+    page.writePage();
+
+    cout << "written success" << endl;
+
+    //     logger.log("Matrix::set_element - row updated and written back to page.");
+    // }
+    // else
+    // {
+    //     cout << "written not success" << endl;
+    //     logger.log("Matrix::set_element - Error: Row index out of bounds.");
+    // }
+}
 
 
 /**

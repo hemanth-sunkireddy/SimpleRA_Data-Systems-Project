@@ -16,10 +16,10 @@ class Page{
     string pageIndex;
     int columnCount;
     int rowCount;
-    vector<vector<int>> rows;
 
     public:
 
+    vector<vector<int>> rows;
     string pageName = "";
     Page();
     Page(string tableName, int pageIndex);

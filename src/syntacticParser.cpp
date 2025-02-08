@@ -41,6 +41,8 @@ bool syntacticParse()
     }
     else if(possibleQueryType == "SOURCE")
         return syntacticParseSOURCE();
+    else if(possibleQueryType == "ROTATE")
+        return syntacticParseROTATE_MATRIX();
     else
     {
         string resultantRelationName = possibleQueryType;
