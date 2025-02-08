@@ -4,6 +4,7 @@ bool syntacticParse()
 {
     logger.log("syntacticParse");
     string possibleQueryType = tokenizedQuery[0];
+    string possibleDataType = tokenizedQuery[1];
 
     if (tokenizedQuery.size() < 2)
     {
@@ -17,34 +18,29 @@ bool syntacticParse()
         return syntacticParseINDEX();
     else if (possibleQueryType == "LIST")
         return syntacticParseLIST();
-    else if (possibleQueryType == "LOAD")
-    {
-        if (tokenizedQuery[1] == "MATRIX")
-            return syntacticParseLOADMATRIX();
-        return syntacticParseLOAD();
+    else if (possibleQueryType == "LOAD"){
+        if (tokenizedQuery.size() > 2 && possibleDataType == "MATRIX")
+            return syntacticParseLOAD_MATRIX();
+        else
+            return syntacticParseLOAD();
     }
-    else if (possibleQueryType == "PRINT")
-    {
-        if (tokenizedQuery[1] == "MATRIX")
-            return syntacticParsePRINTMATRIX();
-        return syntacticParsePRINT();
+    else if (possibleQueryType == "PRINT"){
+        if (tokenizedQuery.size() > 2 && possibleDataType == "MATRIX")
+            return syntacticParsePRINT_MATRIX();
+        else
+            return syntacticParsePRINT();
     }
     else if (possibleQueryType == "RENAME")
-    {
         return syntacticParseRENAME();
-    }
-    else if (possibleQueryType == "EXPORT")
+    else if(possibleQueryType == "EXPORT")
     {
-        if (tokenizedQuery[1] == "MATRIX")
-            return syntacticParseEXPORTMATRIX();
-        return syntacticParseEXPORT();
+        if (tokenizedQuery.size() > 2 && possibleDataType == "MATRIX")
+            return syntacticParseEXPORT_MATRIX();
+        else
+            return syntacticParseEXPORT();
     }
-    else if (possibleQueryType == "SOURCE")
+    else if(possibleQueryType == "SOURCE")
         return syntacticParseSOURCE();
-    else if(possibleQueryType == "ROTATE")
-        return syntacticParseROTATEMATRIX();
-    else if(possibleQueryType == "CROSSTRANSPOSE")
-        return syntacticParseCROSSTRANSPOSE();
     else
     {
         string resultantRelationName = possibleQueryType;
@@ -138,9 +134,9 @@ void ParsedQuery::clear()
  * @brief Checks to see if source file exists. Called when LOAD command is
  * invoked.
  *
- * @param tableName
- * @return true
- * @return false
+ * @param tableName 
+ * @return true 
+ * @return false 
  */
 bool isFileExists(string tableName)
 {
@@ -153,12 +149,11 @@ bool isFileExists(string tableName)
  * @brief Checks to see if source file exists. Called when SOURCE command is
  * invoked.
  *
- * @param tableName
- * @return true
- * @return false
+ * @param tableName 
+ * @return true 
+ * @return false 
  */
-bool isQueryFile(string fileName)
-{
+bool isQueryFile(string fileName){
     fileName = "../data/" + fileName + ".ra";
     struct stat buffer;
     return (stat(fileName.c_str(), &buffer) == 0);

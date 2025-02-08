@@ -11,9 +11,11 @@ class Cursor{
     int pageIndex;
     string tableName;
     int pagePointer;
+    int is_it_matrix = 0;
 
     public:
     Cursor(string tableName, int pageIndex);
+    Cursor(string matrixName, int pageIndex, int is_matrix);
     vector<int> getNext();
     void nextPage(int pageIndex);
 };

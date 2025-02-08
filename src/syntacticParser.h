@@ -1,5 +1,5 @@
 #include "tableCatalogue.h"
-// #include "matrixCatalogue.h"
+
 using namespace std;
 
 enum QueryType
@@ -8,24 +8,20 @@ enum QueryType
     CROSS,
     DISTINCT,
     EXPORT,
+    EXPORT_MATRIX,
     INDEX,
     JOIN,
     LIST,
     LOAD,
+    LOAD_MATRIX,
     PRINT,
+    PRINT_MATRIX,
     PROJECTION,
     RENAME,
     SELECTION,
     SORT,
     SOURCE,
-    UNDETERMINED,
-
-    //matrix
-    LOAD_MATRIX,
-    PRINT_MATRIX,
-    EXPORT_MATRIX,
-    ROTATE_MATRIX,
-    CROSSTRANSPOSE_MATRIX,
+    UNDETERMINED
 };
 
 enum BinaryOperator
@@ -71,7 +67,6 @@ public:
     string exportRelationName = "";
 
     IndexingStrategy indexingStrategy = NOTHING;
-    // IndexingStrategy1 indexingStrategy1 = NOTHING1;
     string indexColumnName = "";
     string indexRelationName = "";
 
@@ -83,7 +78,7 @@ public:
     string joinSecondColumnName = "";
 
     string loadRelationName = "";
-    string loadMatrixName = "";
+
     string printRelationName = "";
 
     string projectionResultRelationName = "";
@@ -93,7 +88,6 @@ public:
     string renameFromColumnName = "";
     string renameToColumnName = "";
     string renameRelationName = "";
-    string newRenameRelationName = "";
 
     SelectType selectType = NO_SELECT_CLAUSE;
     BinaryOperator selectionBinaryOperator = NO_BINOP_CLAUSE;
@@ -119,23 +113,19 @@ bool syntacticParseCLEAR();
 bool syntacticParseCROSS();
 bool syntacticParseDISTINCT();
 bool syntacticParseEXPORT();
+bool syntacticParseEXPORT_MATRIX();
 bool syntacticParseINDEX();
 bool syntacticParseJOIN();
 bool syntacticParseLIST();
 bool syntacticParseLOAD();
+bool syntacticParseLOAD_MATRIX();
 bool syntacticParsePRINT();
+bool syntacticParsePRINT_MATRIX();
 bool syntacticParsePROJECTION();
 bool syntacticParseRENAME();
 bool syntacticParseSELECTION();
 bool syntacticParseSORT();
 bool syntacticParseSOURCE();
-
-//matrix
-bool syntacticParseLOADMATRIX();
-bool syntacticParsePRINTMATRIX();
-bool syntacticParseEXPORTMATRIX();
-bool syntacticParseROTATEMATRIX();
-bool syntacticParseCROSSTRANSPOSE();
 
 bool isFileExists(string tableName);
 bool isQueryFile(string fileName);

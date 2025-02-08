@@ -16,12 +16,12 @@ bool syntacticParseLOAD()
     return true;
 }
 
-bool syntacticParseLOADMATRIX()
+bool syntacticParseLOAD_MATRIX()
 {
-    logger.log("syntacticParseLOADMATRIX");
-    if (tokenizedQuery.size() != 3)
+    logger.log("syntacticParseLOAD_MATRIX");
+    if (tokenizedQuery.size()!=3)
     {
-        cout << "SYNTAX ERROR" << endl;
+        cout << "SYNTAX ERROR {please follow grammer}" << endl;
         return false;
     }
     parsedQuery.queryType = LOAD_MATRIX;
@@ -46,19 +46,17 @@ bool semanticParseLOAD()
     return true;
 }
 
-
-bool semanticParseLOADMATRIX()
-{
-    logger.log("semanticParseLOADMATRIX");
-    if (tableCatalogue.isTable(parsedQuery.loadRelationName))
+bool semanticParseLOAD_MATRIX (){
+    logger.log("semanticParseLOAD_MATRIX");
+    if (matrixCatalogue.ismatrix(parsedQuery.loadRelationName))
     {
-        cout << "SEMANTIC ERROR: Matrix already exists" << endl;
+        cout << "SEMANTIC ERROR : Relation already existing" << endl;
         return false;
     }
 
     if (!isFileExists(parsedQuery.loadRelationName))
     {
-        cout << "SEMANTIC ERROR: Data file doesn't exist" << endl;
+        cout << "SEMANTIC ERROR : Data file doesn't exist" << endl;
         return false;
     }
     return true;
@@ -77,17 +75,13 @@ void executeLOAD()
     return;
 }
 
-void executeLOADMATRIX()
-{
-    logger.log("executeLOADMATRIX");
+void executeLOAD_MATRIX(){
+    logger.log("executeLOAD_MATRIX");
 
-    Table *table = new Table(parsedQuery.loadRelationName);
-    if (table->loadMatrix())
+    Matrix *matrix = new Matrix(parsedQuery.loadRelationName);
+    if (matrix -> load())
     {
-    
-        // table->firstName = table->tableName;
-        tableCatalogue.insertTable(table);
-        cout << "Loaded Matrix. Column Count: " << table->columnCount << " Row Count: " << table->rowCount << endl;
+        matrixCatalogue.insertmatrix(matrix);
+        cout << "Loaded Matrix. Column count : " << matrix->columnCount << " Row Count : " << matrix -> rowCount << endl;
     }
-    return;
 }

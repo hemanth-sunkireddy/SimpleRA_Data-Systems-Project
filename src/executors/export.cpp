@@ -18,47 +18,18 @@ bool syntacticParseEXPORT()
     return true;
 }
 
-bool syntacticParseEXPORTMATRIX()
+bool syntacticParseEXPORT_MATRIX()
 {
-    logger.log("syntacticParseEXPORTMATRIX");
+    logger.log("syntacticParseEXPORT_MATRIX");
     if (tokenizedQuery.size() != 3)
     {
-        cout << "SYNTAX ERROR" << endl;
+        cout << "SYNTACTIC ERROR : PLEASE REFER GRAMMER" << endl;
         return false;
     }
     parsedQuery.queryType = EXPORT_MATRIX;
     parsedQuery.exportRelationName = tokenizedQuery[2];
     return true;
 }
-
-// ROTATE MATRIX
-bool syntacticParseROTATEMATRIX()
-{
-    logger.log("syntacticParseROTATEMATRIX");
-    if (tokenizedQuery.size() != 3)
-    {
-        cout << "SYNTAX ERROR, please give ROTATE MATRIX A" << endl;
-        return false;
-    }
-    parsedQuery.queryType = ROTATE_MATRIX;
-    parsedQuery.exportRelationName = tokenizedQuery[2];
-    return true;
-}
-
-// CROSS TRANSPOSE MATRIX
-bool syntacticParseCROSSTRANSPOSE()
-{
-    logger.log("syntacticParseROTATEMATRIX");
-    if (tokenizedQuery.size() != 3)
-    {
-        cout << "SYNTAX ERROR, please give CROSSTRANPOSE A B" << endl;
-        return false;
-    }
-    parsedQuery.queryType = CROSSTRANSPOSE_MATRIX;
-    parsedQuery.exportRelationName = tokenizedQuery[2];
-    return true;
-}
-
 
 bool semanticParseEXPORT()
 {
@@ -70,39 +41,14 @@ bool semanticParseEXPORT()
     return false;
 }
 
-
-
-bool semanticParseEXPORTMATRIX()
+bool semanticParseEXPORT_MATRIX()
 {
-    logger.log("semanticParseEXPORTMATRIX");
-    //Table should exist
-    if (tableCatalogue.isTable(parsedQuery.exportRelationName))
+    logger.log("semanticParseEXPORT_MATRIX");
+    if (matrixCatalogue.ismatrix(parsedQuery.exportRelationName))
         return true;
-    cout << "SEMANTIC ERROR: No such relation exists" << endl;
+    cout << "SEMANTIC ERROR : No such relation exists" << endl;
     return false;
 }
-
-bool semanticParseROTATEMATRIX()
-{
-    logger.log("semanticParseROTATEMATRIX");
-    //Table should exist
-    if (tableCatalogue.isTable(parsedQuery.exportRelationName))
-        return true;
-    cout << "SEMANTIC ERROR: No such relation exists" << endl;
-    return false;
-}
-
-bool semanticParseCROSSTRANSPOSEMATRIX()
-{
-    logger.log("semanticParseROTATEMATRIX");
-    //Table should exist
-    if (tableCatalogue.isTable(parsedQuery.exportRelationName))
-        return true;
-    cout << "SEMANTIC ERROR: No such relation exists" << endl;
-    return false;
-}
-
-
 
 void executeEXPORT()
 {
@@ -112,26 +58,10 @@ void executeEXPORT()
     return;
 }
 
-void executeEXPORTMATRIX()
+void executeEXPORT_MATRIX()
 {
-    logger.log("executeEXPORTMARIX");
-    Table* table = tableCatalogue.getTable(parsedQuery.exportRelationName);
-    table->makePermanentMatrix();
-    return;
-}
-
-void executeROTATEMATRIX()
-{
-    logger.log("executeROTATEMARIX");
-    Table* table = tableCatalogue.getTable(parsedQuery.exportRelationName);
-    table->rotateMatrix();
-    return;
-}
-
-void executeCROSSTRANSPOSEMATRIX()
-{
-    logger.log("executeCROSSTRANSPOSEMARIX");
-    Table* table = tableCatalogue.getTable(parsedQuery.exportRelationName);
-    table->crossTransposeMatrix();
+    logger.log("executeEXPORT_MATRIX");
+    Matrix* matrix = matrixCatalogue.getmatrix(parsedQuery.exportRelationName);
+    matrix->makePermanent();
     return;
 }

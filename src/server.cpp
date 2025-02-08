@@ -4,13 +4,13 @@
 using namespace std;
 
 float BLOCK_SIZE = 1;
-unsigned int BLOCK_COUNT = 2;
-unsigned int PRINT_COUNT = 20;
+uint BLOCK_COUNT = 2;
+uint PRINT_COUNT = 20;
 Logger logger;
 vector<string> tokenizedQuery;
 ParsedQuery parsedQuery;
 TableCatalogue tableCatalogue;
-// MatrixCatalogue matrixCatalogue;
+MatrixCatalogue matrixCatalogue;
 BufferManager bufferManager;
 
 void doCommand()
@@ -20,7 +20,6 @@ void doCommand()
         executeCommand();
     return;
 }
-
 
 void execute_line(string line, regex delim, int* quit_flag){
     // cout << "\n> " << line << endl;

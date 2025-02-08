@@ -21,3 +21,16 @@ public:
     void print();
     ~TableCatalogue();
 };
+
+class MatrixCatalogue {
+    unordered_map<string, Matrix*> matrices;
+
+public :
+    MatrixCatalogue() {}
+    void insertmatrix(Matrix* matrix);
+    void deletematrix(string matrixname);
+    Matrix* getmatrix(string matrixname);
+    bool ismatrix(string matrixname);
+    void print();
+    ~MatrixCatalogue();
+};

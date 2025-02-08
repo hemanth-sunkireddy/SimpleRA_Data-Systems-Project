@@ -26,15 +26,15 @@ class BufferManager{
     bool inPool(string pageName);
     Page getFromPool(string pageName);
     Page insertIntoPool(string tableName, int pageIndex);
+    Page insertIntoPool(string tableName, int pageIndex, int is_matrix);
 
     public:
     
     BufferManager();
     Page getPage(string tableName, int pageIndex);
-    Page getPage(string tableName, string pageIndex);
+    Page getPage(string matrixName, int pageIndex, int is_matrix);
     void writePage(string pageName, vector<vector<int>> rows);
     void deleteFile(string tableName, int pageIndex);
     void deleteFile(string fileName);
     void writePage(string tableName, int pageIndex, vector<vector<int>> rows, int rowCount);
-    void writePage(string tableName, string pageIndex, vector<vector<int>> rows, int rowCount);
 };
