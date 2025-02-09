@@ -113,6 +113,7 @@ void BufferManager::writePage(string tableName, int pageIndex, vector<vector<int
 {
     logger.log("BufferManager::writePage");
     Page page(tableName, pageIndex, rows, rowCount);
+    // Page page(matrixName, pageIndex, rows, rowCount);
     page.writePage();
 }
 
@@ -141,4 +142,24 @@ void BufferManager::deleteFile(string tableName, int pageIndex)
     logger.log("BufferManager::deleteFile");
     string fileName = "../data/temp/"+tableName + "_Page" + to_string(pageIndex);
     this->deleteFile(fileName);
+}
+
+/**
+ * @brief Removes a page from the buffer pool if it exists.
+ *
+ * @param pageName The name of the page to remove.
+ */
+void BufferManager::deletePage(string pageName)
+{
+    logger.log("BufferManager::deletePage");
+    for (auto it = this->pages.begin(); it != this->pages.end(); ++it)
+    {
+        if (it->pageName == pageName)
+        {
+            this->pages.erase(it);
+            logger.log("BufferManager::deletePage: Page removed from buffer");
+            return;
+        }
+    }
+    logger.log("BufferManager::deletePage: Page not found in buffer");
 }

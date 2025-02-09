@@ -26,5 +26,8 @@ class Page{
     Page(string tableName, int pageIndex, int is_matrix);
     Page(string tableName, int pageIndex, vector<vector<int>> rows, int rowCount);
     vector<int> getRow(int rowIndex);
+    void updateRow(int rowIndex, vector<int> newRow);
+    vector<vector<int>> getAllRows();
+    int getrowcount();
     void writePage();
 };

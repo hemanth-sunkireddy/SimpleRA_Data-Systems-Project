@@ -160,3 +160,21 @@ void Page::writePage()
     }
     fout.close();
 }
+
+void Page::updateRow(int rowIndex, vector<int> newRow) {
+    if (rowIndex >= this->rows.size()) {
+        cout << "Error: Row index out of bounds." << endl;
+        return;
+    }
+    this->rows[rowIndex] = newRow;
+}
+
+vector<vector<int>> Page::getAllRows() {
+    logger.log("Page::getAllRows");
+    return this->rows;
+}
+
+int Page::getrowcount(){
+    logger.log("Page::getRowCount");
+    return this->rowCount;
+}

@@ -96,3 +96,9 @@ MatrixCatalogue::~MatrixCatalogue(){
         delete matrix.second;
     }
 }
+
+void MatrixCatalogue::updateMatrix(Matrix* matrix) {
+    logger.log("MatrixCatalogue::updateMatrix");
+    // Overwrite the existing matrix with the updated one
+    this->matrices[matrix->matrixname] = matrix;
+}

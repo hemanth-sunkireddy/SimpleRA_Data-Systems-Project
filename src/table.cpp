@@ -336,61 +336,108 @@ void Matrix::print()
     printRowCount(this -> rowCount);
 }
 
-Matrix* Matrix::rotate()
-{
-    int rows_in_matrix = this->rowCount;
-    int cols_in_matrix = this->columnCount;
+void Matrix::rotate() {
+    cout << "GET ELEM : " << this->get_element(2,2) << endl;
+    this->set_element(2,2,69);
+    cout << "GET ELEM after set : " << this->get_element(2,2) << endl;
+    // if (this->rowCount != this->columnCount) {
+    //     // In-place rotation is not supported for non-square matrices
+    //     std::cerr << "In-place rotation is only supported for square matrices." << std::endl;
+    //     return;
+    // }
 
-    // Creating a new matrix for the rotated version
-    Matrix *rotated = new Matrix(parsedQuery.rotateRelationName + "_R");
-    rotated->maxRowsPerBlock = this->maxRowsPerBlock;
-    rotated->rowCount = cols_in_matrix;  // Swapping rows and columns
-    rotated->columnCount = rows_in_matrix;
+    // int N = this->rowCount;  // Since it's a square matrix, rowCount == columnCount
 
+    // // Rotate the matrix layer by layer
+    // for (int layer = 0; layer < N / 2; ++layer) {
+    //     int first = layer;
+    //     int last = N - 1 - layer;
+        
+    //     for (int i = first; i < last; ++i) {
+    //         int offset = i - first;
 
-    // Temporary storage for rows to be written
-    vector<int> rotated_row(rotated->columnCount, 0);
-    vector<vector<int>> rowsInPage(this->maxRowsPerBlock, rotated_row);
+    //         // Save the top element
+    //         int top = this->get_element(first, i);
 
-    int pageCounter = 0;  // Tracks number of rows in the current page
+    //         // Left -> Top
+    //         this->set_element(first, i, this->get_element(last - offset, first));
+    //         bufferManager.deletePage(pageName);
+    //         // bufferManager.getPage()
 
-    // Rotate logic: iterate through columns and rows
-    for (int each_col = 0; each_col < cols_in_matrix; each_col++)
-    {
-        for (int each_row = 0; each_row < rows_in_matrix; each_row++)
-        {
-            // Place the element from the original matrix into the rotated position
-            int element = this->get_element(each_row, each_col);
-            rotated_row[each_row] = element;
-        }
+    //         // Bottom -> Left
+    //         this->set_element(last - offset, first, this->get_element(last, last - offset));
 
-        // Add the rotated row (which corresponds to a column in the original matrix) to the page
-        rowsInPage[pageCounter] = rotated_row;
-        pageCounter++;
+    //         // Right -> Bottom
+    //         this->set_element(last, last - offset, this->get_element(i, last));
 
-        // When the page is full, write to buffer
-        if (pageCounter == rotated->maxRowsPerBlock)
-        {
-            bufferManager.writePage(rotated->matrixname, rotated->blockCount, rowsInPage, pageCounter);
-            rotated->blockCount++;
-            rotated->rowsPerBlockCount.emplace_back(pageCounter);
-            pageCounter = 0;
-        }
-
-        rotated->updateStatistics(rotated_row);  // Update statistics after processing each rotated row
-    }
-
-    // Write any remaining rows to the buffer
-    if (pageCounter > 0)
-    {
-        bufferManager.writePage(rotated->matrixname, rotated->blockCount, rowsInPage, pageCounter);
-        rotated->blockCount++;
-        rotated->rowsPerBlockCount.emplace_back(pageCounter);
-    }
-    rotated->rowCount = this->columnCount;
-    cout << "rotated matrix dim  :  " << rotated->rowCount << rotated->columnCount <<endl;
-    return rotated;
+    //         // Top (saved) -> Right
+    //         this->set_element(i, last, top);
+    //     }
+    // }
 }
+
+
+
+// Matrix* Matrix::rotate()
+// {
+//     cout << "Get element test : " << this->get_element(2,2) << endl;
+//     this->set_element(2,2,69);
+//     cout << "Set element test : " << this->get_element(2,2) << endl;
+
+//     // int rows_in_matrix = this->rowCount;
+//     // int cols_in_matrix = this->columnCount;
+
+//     // // Creating a new matrix for the rotated version
+//     Matrix *rotated = new Matrix(parsedQuery.rotateRelationName + "_R");
+//     // rotated->maxRowsPerBlock = this->maxRowsPerBlock;
+//     // rotated->rowCount = cols_in_matrix;  // Swapping rows and columns
+//     // rotated->columnCount = rows_in_matrix;
+
+
+//     // // Temporary storage for rows to be written
+//     // vector<int> rotated_row(rotated->columnCount, 0);
+//     // vector<vector<int>> rowsInPage(this->maxRowsPerBlock, rotated_row);
+
+//     // int pageCounter = 0;  // Tracks number of rows in the current page
+
+//     // // Rotate logic: iterate through columns and rows
+//     // for (int each_col = 0; each_col < cols_in_matrix; each_col++)
+//     // {
+//     //     for (int each_row = 0; each_row < rows_in_matrix; each_row++)
+//     //     {
+//     //         // Place the element from the original matrix into the rotated position
+//     //         int element = this->get_element(each_row, each_col);
+//     //         rotated_row[each_row] = element;
+//     //     }
+
+//     //     // Add the rotated row (which corresponds to a column in the original matrix) to the page
+//     //     rowsInPage[pageCounter] = rotated_row;
+//     //     pageCounter++;
+
+//     //     // When the page is full, write to buffer
+//     //     if (pageCounter == rotated->maxRowsPerBlock)
+//     //     {
+//     //         bufferManager.writePage(rotated->matrixname, rotated->blockCount, rowsInPage, pageCounter);
+//     //         rotated->blockCount++;
+//     //         rotated->rowsPerBlockCount.emplace_back(pageCounter);
+//     //         pageCounter = 0;
+//     //     }
+
+//     //     rotated->updateStatistics(rotated_row);  // Update statistics after processing each rotated row
+//     // }
+
+//     // // Write any remaining rows to the buffer
+//     // if (pageCounter > 0)
+//     // {
+//     //     bufferManager.writePage(rotated->matrixname, rotated->blockCount, rowsInPage, pageCounter);
+//     //     rotated->blockCount++;
+//     //     rotated->rowsPerBlockCount.emplace_back(pageCounter);
+//     // }
+//     // rotated->rowCount = this->columnCount;
+//     // cout << "rotated matrix dim  :  " << rotated->rowCount << rotated->columnCount <<endl;
+//     // // this = rotated;
+//     return rotated;
+// }
 
 
 int Matrix::get_element(int i, int j)
@@ -409,6 +456,35 @@ int Matrix::get_element(int i, int j)
     // now we need to get the jth element from the row.
     return row[j];
 }
+
+void Matrix::set_element(int row, int col, int value) {
+    // Ensure row and col are within bounds
+    if (row >= this->rowCount || col >= this->columnCount || row < 0 || col < 0) {
+        cout << "Error: Attempting to access out-of-bounds element." << endl;
+        return;
+    }
+
+    // Fetch the page/block that contains the element
+    int pageIndex = row / this->maxRowsPerBlock;
+    int rowInPage = row % this->maxRowsPerBlock;
+    string pageName = "../data/temp/" + this->matrixname + "_Page" + to_string(pageIndex);
+
+    // Load the page from buffer (if not already in memory)
+    Page page = bufferManager.getPage(this->matrixname, pageIndex, 1);
+    vector<int> matrixRow = page.getRow(rowInPage);
+
+    // Update the element in the row
+    matrixRow[col] = value;
+
+    // Write the updated row back to the page
+    page.updateRow(rowInPage, matrixRow);
+
+    // Optionally mark the page as dirty, if your buffer manager tracks changes
+    bufferManager.writePage(this->matrixname, pageIndex, page.getAllRows(), page.getrowcount());
+    matrixCatalogue.updateMatrix(this);
+    bufferManager.deletePage(pageName);
+}
+
 
 // void Matrix::set_element(int i, int j, int elem)
 // {

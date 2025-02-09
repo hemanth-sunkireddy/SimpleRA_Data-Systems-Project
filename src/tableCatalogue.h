@@ -31,6 +31,7 @@ public :
     void deletematrix(string matrixname);
     Matrix* getmatrix(string matrixname);
     bool ismatrix(string matrixname);
+    void updateMatrix(Matrix* matrix);
     void print();
     ~MatrixCatalogue();
 };

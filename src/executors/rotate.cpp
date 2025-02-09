@@ -24,11 +24,21 @@ bool semanticParseROTATE_MATRIX() {
 }
 
 void executeROTATE_MATRIX() {
+    // logger.log("executeROTATE_MATRIX");
+    // Matrix *matrix = matrixCatalogue.getmatrix(parsedQuery.rotateRelationName);
+    // // matrix -> rotate();
+    // Matrix *rotated = matrix -> rotate();
+    // rotated->matrixname = matrix->matrixname;
+    // matrixCatalogue.deletematrix(matrix->matrixname);
+    // string pageName = "../data/temp/"+ matrix->matrixname + "_Page" + to_string(0);
+    // bufferManager.deleteFile(pageName);
+    // matrix = rotated;
+    // matrixCatalogue.insertmatrix(rotated);
+    // return;
+    
     logger.log("executeROTATE_MATRIX");
     Matrix *matrix = matrixCatalogue.getmatrix(parsedQuery.rotateRelationName);
-    Matrix *rotated = matrix -> rotate();
-    rotated->matrixname = matrix->matrixname;
-    matrixCatalogue.deletematrix(matrix->matrixname);
-    matrixCatalogue.insertmatrix(rotated);
+    matrix->rotate();  // In-place rotation
+    matrixCatalogue.updateMatrix(matrix);  // Ensure the catalogue reflects the updated matrix, if needed
     return;
 }

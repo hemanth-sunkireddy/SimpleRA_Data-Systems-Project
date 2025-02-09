@@ -117,9 +117,9 @@ public:
     // bool isColumn(string columnName);
     // void renameColumn(string fromColumnName, string toColumnName);
     void print();
-    Matrix* rotate();
+    void rotate();
     int get_element(int row_i, int col_j);
-    // void set_element (int row_i, int col_j, int elem);
+    void set_element (int row_i, int col_j, int elem);
     void makePermanent();
     bool isPermanent();
     void getNextPage(Cursor *cursor);
