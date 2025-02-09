@@ -20,3 +20,5 @@ bool semanticParseSELECTION();
 bool semanticParseSORT();
 bool semanticParseSOURCE();
 bool semanticParseROTATE_MATRIX();
+bool semanticParseCROSSTRANSPOSE();
+bool semanticParseCHECKANTISYM();
