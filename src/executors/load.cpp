@@ -89,54 +89,52 @@ void executeLOAD_MATRIX(){
 // CROSSTRANPOSE OF TWO MATRICES INDEPENDENT OF CLASSES
 void crossTranspose(Matrix *matrix1, Matrix *matrix2){
     cout << "CROSS TRANSPOSE LOGIC HERE" << endl;
-    int matrix1_rowlen = matrix1->rowCount;
-    int matrix1_collen = matrix1->columnCount;
-    int matrix2_rowlen = matrix2->rowCount;
-    int matrix2_collen = matrix2->columnCount;
-    cout << matrix1_rowlen << " " << matrix2_rowlen << endl;
+    int matrix1_size = matrix1->rowCount;
+    int matrix2_size = matrix2->columnCount;
+   
     
-    string cross_transpose_a = "A_CT";
-    string cross_transpose_b = "B_CT";
+   vector<vector<int>> matrix1_transpose(matrix2_size, vector<int>(matrix2_size));
+   vector<vector<int>> matrix2_transpose(matrix1_size, vector<int>(matrix1_size));
 
-    Matrix *transposedMatrix1 = new Matrix(cross_transpose_a);
-    transposedMatrix1->rowCount = matrix1_collen;
-    transposedMatrix1->columnCount = matrix1_rowlen;
+   // Calculate transpose of matrices and store in matrix1_tranaspose and matrix2_transpose
+    for (int i = 0; i < matrix1_size; ++i) {
+        for (int j = 0; j < matrix1_size; ++j) {
+            matrix1_transpose[j][i] = matrix1->get_element(i,j);
+            cout << matrix1_transpose[j][i] << " ";
+        }
+        cout << endl;
+    }
+    cout << endl;
+    for (int i = 0; i < matrix2_size; ++i) {
+        for (int j = 0; j < matrix2_size; ++j) {
+            matrix2_transpose[j][i] = matrix2->get_element(i,j);
+            cout << matrix2_transpose[j][i] << " ";
+        }
+        cout << endl;
+    }
 
-    Matrix *transposedMatrix2 = new Matrix(cross_transpose_b);
-    transposedMatrix2->rowCount = matrix2_collen;
-    transposedMatrix2->columnCount = matrix2_rowlen;
+    cout << endl;
 
-    for (int i = 0; i < matrix1_rowlen; ++i) {
-        for (int j = 0; j < matrix1_collen; ++j) {
-            transposedMatrix1->set_element(j, i, matrix1->get_element(i,j));
+    // Now update the original matrices with Cross Transpose of other matrix
+    for (int i = 0; i < matrix2_size; ++i) {
+        for (int j = 0; j < matrix2_size; ++j) {
+            matrix1->set_element(i,j, matrix2_transpose[i][j]);
         }
     }
-    for (int i = 0; i < matrix2_rowlen; ++i) {
-        for (int j = 0; j < matrix2_collen; ++j) {
-            transposedMatrix2->set_element(j, i, matrix2->get_element(i,j));
+    for (int i = 0; i < matrix1_size; ++i) {
+        for (int j = 0; j < matrix1_size; ++j) {
+            matrix2->set_element(i,j, matrix1_transpose[i][j]);
         }
     }
-    transposedMatrix1 -> matrixname = matrix2->sourceFileName;
-    transposedMatrix2 ->matrixname = matrix1->sourceFileName;
-    matrixCatalogue.insertmatrix(transposedMatrix1);
-    matrixCatalogue.insertmatrix(transposedMatrix2);
+    matrixCatalogue.updateMatrix(matrix1);
+    matrixCatalogue.updateMatrix(matrix2);
     cout << "SUCCESSFULLY CROSSTRANSPOSED BOTH MATRICES" << endl;
 }
 
 void executeCROSSTRANSPOSE(){
     logger.log("executeCROSSTRANSPOSE");
 
-    Matrix *matrix1 = new Matrix(parsedQuery.Matrix1);
-    Matrix *matrix2 = new Matrix(parsedQuery.Matrix2);
-    if (matrix1 -> load())
-    {
-        matrixCatalogue.insertmatrix(matrix1);
-        cout << "Loaded Matrix. Column count : " << matrix1->columnCount << " Row Count : " << matrix1 -> rowCount << endl;
-    }
-    if (matrix2 -> load())
-    {
-        matrixCatalogue.insertmatrix(matrix2);
-        cout << "Loaded Matrix. Column count : " << matrix2->columnCount << " Row Count : " << matrix2 -> rowCount << endl;
-    }
+    Matrix *matrix1 = matrixCatalogue.getmatrix(parsedQuery.Matrix1);
+    Matrix *matrix2 = matrixCatalogue.getmatrix(parsedQuery.Matrix2);
     crossTranspose(matrix1, matrix2);
 }
