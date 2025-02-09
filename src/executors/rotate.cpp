@@ -23,6 +23,16 @@ bool semanticParseROTATE_MATRIX() {
     return true;
 }
 
+bool semanticParseCHECKANTISYM() {
+    logger.log("semanticParseCHECKANTISYM");
+    if (!matrixCatalogue.ismatrix(parsedQuery.Matrix1) || !matrixCatalogue.ismatrix(parsedQuery.Matrix2))
+    {
+        cout << "SEMANTIC ERROR : EITHER A OR B NOT EXIST" << endl;
+        return false;
+    }
+    return true;
+}
+
 void executeROTATE_MATRIX() {
     // logger.log("executeROTATE_MATRIX");
     // Matrix *matrix = matrixCatalogue.getmatrix(parsedQuery.rotateRelationName);
@@ -41,4 +51,18 @@ void executeROTATE_MATRIX() {
     matrix->rotate();  // In-place rotation
     matrixCatalogue.updateMatrix(matrix);  // Ensure the catalogue reflects the updated matrix, if needed
     return;
+}
+
+void checkAntiSym(Matrix *matrix1, Matrix *matrix2){
+    cout << "EXECUTING CHECKANTISYM" << endl;
+    return;
+}
+
+void executeCHECKANTISYM() {
+    
+    logger.log("executeCHECKANTISYM");
+    Matrix *matrix1 = new Matrix(parsedQuery.Matrix1);
+    Matrix *matrix2 = new Matrix(parsedQuery.Matrix2);
+    checkAntiSym(matrix1, matrix2);
+    return ;
 }

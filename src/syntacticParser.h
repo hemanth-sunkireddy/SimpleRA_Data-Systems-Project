@@ -21,7 +21,9 @@ enum QueryType
     SELECTION,
     SORT,
     SOURCE,
+    CROSSTRANSPOSE,
     ROTATE_MATRIX,
+    CHECKANTISYM,
     UNDETERMINED
 };
 
@@ -106,6 +108,9 @@ public:
 
     string sourceFileName = "";
 
+    string Matrix1 = "";
+    string Matrix2 = "";
+
     ParsedQuery();
     void clear();
 };
@@ -128,7 +133,9 @@ bool syntacticParseRENAME();
 bool syntacticParseSELECTION();
 bool syntacticParseSORT();
 bool syntacticParseSOURCE();
+bool syntacticParseCROSSTRANSPOSE();
 bool syntacticParseROTATE_MATRIX();
+bool syntacticParseCHECKANTISYM();
 
 bool isFileExists(string tableName);
 bool isQueryFile(string fileName);

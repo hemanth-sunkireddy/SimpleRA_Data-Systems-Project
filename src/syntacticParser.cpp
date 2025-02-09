@@ -4,12 +4,15 @@ bool syntacticParse()
 {
     logger.log("syntacticParse");
     string possibleQueryType = tokenizedQuery[0];
-    string possibleDataType = tokenizedQuery[1];
-
     if (tokenizedQuery.size() < 2)
     {
-        cout << "SYNTAX ERROR" << endl;
+        cout << "SYNTAX ERROR: PLEASE GIVE MORE THAN 1 ARUGMENTS" << endl;
         return false;
+    }
+    string possibleDataType = tokenizedQuery[1];
+    if (tokenizedQuery.size() == 3)
+    {
+        string possibleMatrixName = tokenizedQuery[2];
     }
 
     if (possibleQueryType == "CLEAR")
@@ -41,6 +44,12 @@ bool syntacticParse()
     }
     else if(possibleQueryType == "SOURCE")
         return syntacticParseSOURCE();
+    else if(possibleQueryType == "CROSSTRANSPOSE"){
+        return syntacticParseCROSSTRANSPOSE();
+    }
+    else if(possibleQueryType == "CHECKANTISYM"){
+        return syntacticParseCHECKANTISYM();
+    }
     else if(possibleQueryType == "ROTATE")
         return syntacticParseROTATE_MATRIX();
     else

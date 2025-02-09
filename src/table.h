@@ -126,7 +126,8 @@ public:
     Cursor getCursor();
     // int getColumnIndex(string columnName);
     void unload();
-
+    // Cross Transpose
+    void crossTranspose(Matrix *matrix2);
     /**
      * @brief Static function that takes a vector of valued and prints them out in a
      * comma seperated format.
