@@ -54,15 +54,50 @@ void executeROTATE_MATRIX() {
 }
 
 void checkAntiSym(Matrix *matrix1, Matrix *matrix2){
-    cout << "EXECUTING CHECKANTISYM" << endl;
+    cout << "CHECK ANTI SYM LOGIC HERE" << endl;
+    int matrix1_size = matrix1->rowCount;
+    int matrix2_size = matrix2->columnCount;
+    if (matrix1_size != matrix2_size){
+        cout << "MATRIX SIZES ARE NOT SAME" << endl;
+    }
+   vector<vector<int>> matrix1_transpose(matrix1_size, vector<int>(matrix1_size));
+   vector<vector<int>> matrix2_copy(matrix2_size, vector<int>(matrix2_size));
+
+   // Calculate transpose of matrices and store in matrix1_tranaspose and matrix2_transpose
+    for (int i = 0; i < matrix1_size; ++i) {
+        for (int j = 0; j < matrix1_size; ++j) {
+            matrix1_transpose[i][j] = -matrix1->get_element(j,i);
+            cout << matrix1_transpose[i][j] << " ";
+        }
+        cout << endl;
+    }
+    cout << endl;
+    for (int i = 0; i < matrix2_size; ++i) {
+        for (int j = 0; j < matrix2_size; ++j) {
+            matrix2_copy[i][j] = matrix2->get_element(i,j);
+            cout << matrix2_copy[i][j] << " ";
+        }
+        cout << endl;
+    }
+
+    for (int i = 0; i < matrix2_size; ++i) {
+        for (int j = 0; j < matrix2_size; ++j) {
+            if(matrix1_transpose[i][j] != matrix2_copy[i][j]){
+                cout << "MATRICES NOT ANTISYMMETRIC" << endl;
+                return;
+            } 
+        }
+        cout << endl;
+    }
+    cout << "MATRICES ARE ANTI SYMMETRIC" << endl;
     return;
 }
 
 void executeCHECKANTISYM() {
     
     logger.log("executeCHECKANTISYM");
-    Matrix *matrix1 = new Matrix(parsedQuery.Matrix1);
-    Matrix *matrix2 = new Matrix(parsedQuery.Matrix2);
+    Matrix *matrix1 = matrixCatalogue.getmatrix(parsedQuery.Matrix1);
+    Matrix *matrix2 = matrixCatalogue.getmatrix(parsedQuery.Matrix2);
     checkAntiSym(matrix1, matrix2);
     return ;
 }
