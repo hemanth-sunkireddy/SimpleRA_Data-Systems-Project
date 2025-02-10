@@ -417,7 +417,9 @@ void Matrix::set_element(int row, int col, int value) {
     bufferManager.writePage(this->matrixname, pageIndex, page.getAllRows(), page.getrowcount());
     matrixCatalogue.updateMatrix(this);
     bufferManager.deletePage(pageName);
-}void crossTranspose(Matrix *matrix2)
+}
+
+void crossTranspose(Matrix *matrix2)
 {
     cout << "CROSS TRANPOSE FUNCTIONALITY"  << endl;
 }
