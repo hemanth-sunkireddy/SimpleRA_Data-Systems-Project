@@ -3,13 +3,13 @@
 bool syntacticParseROTATE_MATRIX(){
     // rotate matrix
     logger.log("syntacticParseRotate");
-    if (tokenizedQuery.size() != 3)
+    if (tokenizedQuery.size() != 2)
     {
         cout << "SYNTAX ERROR" << endl;
         return false;
     }
     parsedQuery.queryType = ROTATE_MATRIX;
-    parsedQuery.rotateRelationName = tokenizedQuery[2];
+    parsedQuery.rotateRelationName = tokenizedQuery[1];
     return true;
 }
 
