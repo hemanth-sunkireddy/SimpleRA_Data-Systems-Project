@@ -66,28 +66,11 @@ void checkAntiSym(Matrix *matrix1, Matrix *matrix2){
    // Calculate transpose of matrices and store in matrix1_tranaspose and matrix2_transpose
     for (int i = 0; i < matrix1_size; ++i) {
         for (int j = 0; j < matrix1_size; ++j) {
-            matrix1_transpose[i][j] = -matrix1->get_element(j,i);
-            cout << matrix1_transpose[i][j] << " ";
-        }
-        cout << endl;
-    }
-    cout << endl;
-    for (int i = 0; i < matrix2_size; ++i) {
-        for (int j = 0; j < matrix2_size; ++j) {
-            matrix2_copy[i][j] = matrix2->get_element(i,j);
-            cout << matrix2_copy[i][j] << " ";
-        }
-        cout << endl;
-    }
-
-    for (int i = 0; i < matrix2_size; ++i) {
-        for (int j = 0; j < matrix2_size; ++j) {
-            if(matrix1_transpose[i][j] != matrix2_copy[i][j]){
-                cout << "MATRICES NOT ANTISYMMETRIC" << endl;
+            if(matrix2->get_element(i,j) != -matrix1->get_element(j,i)){
+                cout << "MATRICES ARE NOT ANTISYMMETRIC" << endl;
                 return;
-            } 
+            }
         }
-        cout << endl;
     }
     cout << "MATRICES ARE ANTI SYMMETRIC" << endl;
     return;
