@@ -239,19 +239,161 @@ void Matrix::set_element(int row, int col, int value) {
 ---
 
 ### CROSSTRANSPOSE
-*To be added.*
+```cpp
+void crossTranspose(Matrix *matrix1, Matrix *matrix2){
+    cout << "CROSS TRANSPOSE LOGIC HERE" << endl;
+    int matrix1_size = matrix1->rowCount;
+    int matrix2_size = matrix2->columnCount;
+   
+    
+   vector<vector<int>> matrix1_transpose(matrix2_size, vector<int>(matrix2_size));
+   vector<vector<int>> matrix2_transpose(matrix1_size, vector<int>(matrix1_size));
+
+   // Calculate transpose of matrices and store in matrix1_tranaspose and matrix2_transpose
+    for (int i = 0; i < matrix1_size; ++i) {
+        for (int j = 0; j < matrix1_size; ++j) {
+            matrix1_transpose[j][i] = matrix1->get_element(i,j);
+            cout << matrix1_transpose[j][i] << " ";
+        }
+        cout << endl;
+    }
+    cout << endl;
+    for (int i = 0; i < matrix2_size; ++i) {
+        for (int j = 0; j < matrix2_size; ++j) {
+            matrix2_transpose[j][i] = matrix2->get_element(i,j);
+            cout << matrix2_transpose[j][i] << " ";
+        }
+        cout << endl;
+    }
+
+    cout << endl;
+
+    // Now update the original matrices with Cross Transpose of other matrix
+    for (int i = 0; i < matrix2_size; ++i) {
+        for (int j = 0; j < matrix2_size; ++j) {
+            matrix1->set_element(i,j, matrix2_transpose[i][j]);
+        }
+    }
+    for (int i = 0; i < matrix1_size; ++i) {
+        for (int j = 0; j < matrix1_size; ++j) {
+            matrix2->set_element(i,j, matrix1_transpose[i][j]);
+        }
+    }
+    matrixCatalogue.updateMatrix(matrix1);
+    matrixCatalogue.updateMatrix(matrix2);
+    cout << "SUCCESSFULLY CROSSTRANSPOSED BOTH MATRICES" << endl;
+}
+```
+**Steps:**
+1. _Transpose Calculation_: The transposes of both matrices are calculated by swapping rows and columns, storing the results in matrix1_transpose and matrix2_transpose.
+
+2. _Updating Original Matrices_: The original matrices are updated with the cross-transposed values, then registered in the MatrixCatalogue to ensure consistency. A success message is displayed.
+
+**Error Handling:**
+1. __Syntax Checker__:
+* if the Size of the input query is not equal to 3 we will display error message.
+```
+   bool syntacticParseCROSSTRANSPOSE()
+{
+    logger.log("syntacticParseCROSSTRANSPOSE");
+    if (tokenizedQuery.size() != 3)
+    {
+        cout << "SYNTAX ERROR: Please give CROSSTRANSPOSE A B" << endl;
+        return false;
+    }
+    parsedQuery.queryType = CROSSTRANSPOSE;
+    parsedQuery.Matrix1 = tokenizedQuery[1];
+    parsedQuery.Matrix2 = tokenizedQuery[2];
+    return true;
+}
+```
+2. __Semantic Checker__:
+* If any matrix in the given input doesn't exist then we will show error message saying that matrix doesn't exist.
+```
+bool semanticParseCROSSTRANSPOSE()
+{
+    logger.log("semanticParseCROSSTRANSPOSE");
+    cout << parsedQuery.Matrix1 << endl;
+    if (!matrixCatalogue.ismatrix(parsedQuery.Matrix1))
+    {
+        cout << "SEMANTIC ERROR : " << parsedQuery.Matrix1 << " Doesn't exist." << endl;
+        return false;
+    }
+    if (!matrixCatalogue.ismatrix(parsedQuery.Matrix2))
+    {
+        cout << "SEMANTIC ERROR : " << parsedQuery.Matrix2 << " Doesn't exist." << endl;
+        return false;
+    }
+    return true;
+}
+```
+---
 
 ### CHECK ANTI-SYMMETRY
-*To be added.*
+* We check the anti-symmetry by comparing each element in matrix1 with the corresponding element in matrix2, ensuring that
+* `matrix1(i,j) == -matrix2(j,i)`
+​for all valid indices. If any pair does not satisfy this condition, the matrices are not anti-symmetric.
+```
+void checkAntiSym(Matrix *matrix1, Matrix *matrix2){
+    cout << "CHECK ANTI SYM LOGIC HERE" << endl;
+    int matrix1_size = matrix1->rowCount;
+    int matrix2_size = matrix2->columnCount;
+    if (matrix1_size != matrix2_size){
+        cout << "MATRIX SIZES ARE NOT SAME" << endl;
+    }
+   vector<vector<int>> matrix1_transpose(matrix1_size, vector<int>(matrix1_size));
+   vector<vector<int>> matrix2_copy(matrix2_size, vector<int>(matrix2_size));
 
+   // Calculate transpose of matrices and store in matrix1_tranaspose and matrix2_transpose
+    for (int i = 0; i < matrix1_size; ++i) {
+        for (int j = 0; j < matrix1_size; ++j) {
+            if(matrix2->get_element(i,j) != -matrix1->get_element(j,i)){
+                cout << "MATRICES ARE NOT ANTISYMMETRIC" << endl;
+                return;
+            }
+        }
+    }
+    cout << "MATRICES ARE ANTI SYMMETRIC" << endl;
+    return;
+}
+```
+
+
+**Error Handling:**
+1. _Semantic Checking_:
+* In semantic Parser we are checking whether the input matrices are exist in the matrix Categolue or not. if not exists we will display error message and return false.
+```
+bool semanticParseCHECKANTISYM() {
+    logger.log("semanticParseCHECKANTISYM");
+    if (!matrixCatalogue.ismatrix(parsedQuery.Matrix1) || !matrixCatalogue.ismatrix(parsedQuery.Matrix2))
+    {
+        cout << "SEMANTIC ERROR : EITHER A OR B NOT EXIST" << endl;
+        return false;
+    }
+    return true;
+}
+```
+2. _Syntax Checking_:
+* If the size of the query is not equal to 3, then we will display syntax error message.
+```
+bool syntacticParseCHECKANTISYM(){
+    logger.log("syntacticParseCHECKANTISYM");
+    if (tokenizedQuery.size() != 3)
+    {
+        cout << "SYNTAX ERROR: Please give CHECKANTISYM A B" << endl;
+        return false;
+    }
+    parsedQuery.queryType = CHECKANTISYM;
+    parsedQuery.Matrix1 = tokenizedQuery[1];
+    parsedQuery.Matrix2 = tokenizedQuery[2];
+    return true;
+}
+```
 ---
 
 ## Assumptions
-*To be added.*
+* For the Cross Transpose Operation the matrices are equal dimensional n*n matrices.
 
 ## Contribution of Each Member
-*To be added.*
-Susheel <Koncham Jaali choopinchandi sir>
-Hemanth <Dongodu>
-Ayush <Good Boy>
+* Everone contributed equally.
 
