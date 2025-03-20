@@ -85,7 +85,7 @@ int main(void)
 
         if (tokenizedQuery.size() == 1)
         {
-            cout << "SYNTAX ERROR" << endl;
+            cout << "Please give more than 1 argument" << endl;
             continue;
         }
 

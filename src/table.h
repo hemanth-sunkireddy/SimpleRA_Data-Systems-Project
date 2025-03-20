@@ -48,6 +48,8 @@ public:
     bool isPermanent();
     void getNextPage(Cursor *cursor);
     Cursor getCursor();
+    void sortTable();
+    void externalSort();
     int getColumnIndex(string columnName);
     void unload();
 
@@ -122,6 +124,7 @@ public:
     void set_element (int row_i, int col_j, int elem);
     void makePermanent();
     bool isPermanent();
+    
     void getNextPage(Cursor *cursor);
     Cursor getCursor();
     // int getColumnIndex(string columnName);

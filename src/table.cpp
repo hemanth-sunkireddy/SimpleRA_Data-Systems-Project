@@ -8,7 +8,7 @@ Table::Table()
 {
     logger.log("Table::Table");
 }
-
+vector<int> sortValues, columnIndexes;
 /**
  * @brief Construct a new Table:: Table object used in the case where the data
  * file is available and LOAD command has been called. This command should be
@@ -21,6 +21,40 @@ Table::Table(string tableName)
     logger.log("Table::Table");
     this->sourceFileName = "../data/" + tableName + ".csv";
     this->tableName = tableName;
+}
+struct MyPair {
+    vector<int> row;
+    int blockNum;
+    int boundary;
+    int cursorIndex;
+};
+
+struct CompareByFirstElement {
+    bool operator()(const MyPair &lhs, const MyPair &rhs) const {
+        for (int i = 0; i < columnIndexes.size(); i++) {
+            if (lhs.row[columnIndexes[i]] != rhs.row[columnIndexes[i]]) {
+                if (sortValues[i] == 0)
+                    return lhs.row[columnIndexes[i]] > rhs.row[columnIndexes[i]];
+                else if (sortValues[i] == 1)
+                    return lhs.row[columnIndexes[i]] < rhs.row[columnIndexes[i]];
+            }
+        }
+        return false;
+    }
+};
+
+static bool sortComparator(const vector<int> &a, const vector<int> &b) {
+    logger.log("Inside Sort Comp");
+    for (int i = 0; i < columnIndexes.size(); i++) {
+        logger.log("SORT COL INDEX: " + to_string(columnIndexes[i]));
+        if (a[columnIndexes[i]] != b[columnIndexes[i]]) {
+            if (sortValues[i] == 0)
+                return a[columnIndexes[i]] < b[columnIndexes[i]];
+            else if (sortValues[i] == 1)
+                return a[columnIndexes[i]] > b[columnIndexes[i]];
+        }
+    }
+    return false;
 }
 
 Matrix::Matrix(string matrixname)
@@ -250,6 +284,139 @@ void Table::updateStatistics(vector<int> row)
         }
     }
 }
+void Table::sortTable() {
+    cout << "Inside Table class sort function" << endl;
+
+    sortValues.resize(parsedQuery.sortStrategy.size(), 0);
+    columnIndexes.resize(parsedQuery.sortStrategy.size());
+
+    // Store sorting order
+    for (int i = 0; i < parsedQuery.sortStrategy.size(); i++) {
+        if (parsedQuery.sortStrategy[i] == DESC)
+            sortValues[i] = 1;
+    }
+
+    // Store column indices to sort by
+    for (int i = 0; i < parsedQuery.sortColumns.size(); i++) {
+        columnIndexes[i] = this->getColumnIndex(parsedQuery.sortColumns[i]);
+    }
+
+    long long pageDataRows = this->maxRowsPerBlock;
+    long long cnt = 0;
+    vector<vector<int>> pagesData;
+    Cursor cursor = this->getCursor();
+    int pageIndex = 0;
+
+    // Read each row and sort them page-wise
+    while (true) {
+        vector<int> dataRow = cursor.getNext();
+        if (dataRow.empty()) break;
+
+        pagesData.push_back(dataRow);
+        cnt++;
+
+        if (cnt == pageDataRows) {
+            cout << "Sorting page " << pageIndex << endl;
+            sort(pagesData.begin(), pagesData.end(), sortComparator);
+            bufferManager.writePage(this->tableName, pageIndex, pagesData, cnt);
+            cnt = 0;
+            pageIndex++;
+            pagesData.clear();
+        }
+    }
+
+    // Write the remaining data if not empty
+    if (!pagesData.empty()) {
+        sort(pagesData.begin(), pagesData.end(), sortComparator);
+        bufferManager.writePage(this->tableName, pageIndex, pagesData, cnt);
+    }
+
+    // cout << "Calling External Sort" << endl;
+    this->externalSort();
+    this->makePermanent();
+}
+
+void Table::externalSort() {
+    // cout << "Performing External Sort using K-way merge" << endl;
+    
+    int K = BLOCK_COUNT - 1;
+    int mergeIterations = ceil(log(this->blockCount) / log(K)) - 1;
+    // cout << "Total Iterations: " << mergeIterations << endl;
+
+    vector<Cursor> pageCursor;
+
+    for (int i = 0; i <= mergeIterations; i++) {
+        // cout << "Iteration: " << i + 1 << endl;
+        int size = pow(K, i);
+        int clusters = ceil((double)this->blockCount / size);
+        // cout << "Total Clusters: " << clusters << endl;
+
+        int s = 0, e = size - 1;
+        vector<pair<int, int>> clusterData(clusters);
+        for (int j = 0; j < clusters; j++) {
+            clusterData[j] = {s, e};
+            s += size;
+            e = min(e + size, (int)this->blockCount - 1);
+        }
+
+        int globalPageIndex = 0;
+        for (int j = 0; j < ceil((double)clusters / K); j++) {
+            int start = j * size * K;
+            vector<pair<int, int>> boundaries;
+            while (start < min((int)this->blockCount, K * size * (j + 1))) {
+                boundaries.push_back({start, min(start + size - 1, (int)this->blockCount - 1)});
+                start += size;
+            }
+
+            vector<vector<int>> mergeData;
+            for (int m = 0; m < boundaries.size(); m += K) {
+                priority_queue<MyPair, vector<MyPair>, CompareByFirstElement> pq;
+                vector<pair<Cursor, int>> cursorVec;
+
+                for (int r = m; r <= min(m + K - 1, (int)boundaries.size() - 1); r++) {
+                    Cursor cursor(this->tableName, boundaries[r].first);
+                    cursorVec.push_back({cursor, boundaries[r].first});
+                }
+
+                for (int c = 0; c < cursorVec.size(); c++) {
+                    vector<int> data = cursorVec[c].first.getNextPageRow();
+                    if (!data.empty()) {
+                        pq.push({data, cursorVec[c].first.pageIndex, cursorVec[c].second, c});
+                    }
+                }
+
+                while (!pq.empty()) {
+                    MyPair element = pq.top();
+                    pq.pop();
+                    mergeData.push_back(element.row);
+
+                    int cursorIndex = element.cursorIndex;
+                    vector<int> newRow = cursorVec[cursorIndex].first.getNextPageRow();
+                    if (!newRow.empty()) {
+                        pq.push({newRow, cursorVec[cursorIndex].first.pageIndex, element.boundary, cursorIndex});
+                    }
+
+                    if (mergeData.size() == (int)this->maxRowsPerBlock) {
+                        cout << "Writing to temp file: " << globalPageIndex << endl;
+                        ofstream fout("../data/temp/" + this->tableName + "Dummy" + to_string(globalPageIndex));
+                        for (const auto& row : mergeData) {
+                            for (size_t z = 0; z < row.size(); z++) {
+                                if (z != 0) fout << " ";
+                                fout << row[z];
+                            }
+                            fout << endl;
+                        }
+                        fout.close();
+                        mergeData.clear();
+                        globalPageIndex++;
+                    }
+                }
+            }
+        }
+    }
+}
+
+
 
 void Matrix::updateStatistics(vector<int> row)
 {
@@ -419,10 +586,6 @@ void Matrix::set_element(int row, int col, int value) {
     bufferManager.deletePage(pageName);
 }
 
-void crossTranspose(Matrix *matrix2)
-{
-    cout << "CROSS TRANPOSE FUNCTIONALITY"  << endl;
-}
 
 
 /**

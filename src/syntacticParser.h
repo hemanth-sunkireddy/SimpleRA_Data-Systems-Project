@@ -104,6 +104,8 @@ public:
     SortingStrategy sortingStrategy = NO_SORT_CLAUSE;
     string sortResultRelationName = "";
     string sortColumnName = "";
+    vector<string> sortColumns;
+    vector<SortingStrategy> sortStrategy;
     string sortRelationName = "";
 
     string sourceFileName = "";

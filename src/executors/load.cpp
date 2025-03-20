@@ -65,7 +65,6 @@ bool semanticParseLOAD_MATRIX (){
 void executeLOAD()
 {
     logger.log("executeLOAD");
-
     Table *table = new Table(parsedQuery.loadRelationName);
     if (table->load())
     {

@@ -52,6 +52,9 @@ bool syntacticParse()
     }
     else if(possibleQueryType == "ROTATE")
         return syntacticParseROTATE_MATRIX();
+    else if (possibleQueryType == "SORT"){
+            return syntacticParseSORT();
+    }
     else
     {
         string resultantRelationName = possibleQueryType;
@@ -71,8 +74,6 @@ bool syntacticParse()
             return syntacticParseCROSS();
         else if (possibleQueryType == "DISTINCT")
             return syntacticParseDISTINCT();
-        else if (possibleQueryType == "SORT")
-            return syntacticParseSORT();
         else
         {
             cout << "SYNTAX ERROR" << endl;

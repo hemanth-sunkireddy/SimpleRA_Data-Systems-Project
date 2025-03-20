@@ -17,5 +17,6 @@ class Cursor{
     Cursor(string tableName, int pageIndex);
     Cursor(string matrixName, int pageIndex, int is_matrix);
     vector<int> getNext();
+    vector<int> getNextPageRow();
     void nextPage(int pageIndex);
 };
