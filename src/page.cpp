@@ -30,42 +30,36 @@ Page::Page(string tableName, int pageIndex)
     logger.log("Page::Page");
     this->tableName = tableName;
     this->pageIndex = pageIndex;
-    cout << "Table Name test : " << tableName << endl;
     this->pageName = "../data/temp/" + this->tableName + "_Page" + to_string(pageIndex);
-    Table table;
-    cout << "Table Name test : " << tableName << endl;
-    if (strncmp(tableName.c_str(), "temp_Group", 9) == 0){
-        cout << "Table Name : " << tableName << endl;
-        Table* tempTable = tableCatalogue.getTable(tableName);
-        if (!tempTable) {
-            cerr << "Error: Temporary table not found in catalog" << endl;
-            return;
-        }
-        table = *tempTable;
-        cout << "Table Name 2 : " << table.tableName << endl;
+    
+    Table* tempTable = tableCatalogue.getTable(tableName);
+    if (!tempTable) {
+        cerr << "Error: Table not found in catalog" << endl;
+        return;
     }
-    else{
-        Table* tempTable = tableCatalogue.getTable(tableName);
-        if (!tempTable) {
-            cerr << "Error: Table not found in catalog" << endl;
-            return;
-        }
-        table = *tempTable;
-    }
+    Table table = *tempTable;
+    
     this->columnCount = table.columnCount;
     uint maxRowCount = table.maxRowsPerBlock;
     vector<int> row(columnCount, 0);
     this->rows.assign(maxRowCount, row);
 
     ifstream fin(pageName, ios::in);
+    if (!fin.is_open()) {
+        cerr << "Error: Could not open file " << pageName << endl;
+        return;
+    }
+
     this->rowCount = table.rowsPerBlockCount[pageIndex];
-    int number;
-    for (uint rowCounter = 0; rowCounter < this->rowCount; rowCounter++)
-    {
-        for (int columnCounter = 0; columnCounter < columnCount; columnCounter++)
-        {
-            fin >> number;
-            this->rows[rowCounter][columnCounter] = number;
+    string line;
+    for (uint rowCounter = 0; rowCounter < this->rowCount; rowCounter++) {
+        getline(fin, line);
+        stringstream ss(line);
+        string value;
+        for (int columnCounter = 0; columnCounter < columnCount; columnCounter++) {
+            if (getline(ss, value, ' ')) {
+                this->rows[rowCounter][columnCounter] = stoi(value);
+            }
         }
     }
     fin.close();

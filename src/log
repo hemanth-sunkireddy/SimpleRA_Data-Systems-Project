@@ -21,7 +21,7 @@ TableCatalogue::~insertTable
 ParseQuery::clear
 
 Reading New Command: 
-fe <- GROUP BY Sex FROM EMPLOYEE HAVING AVG(Salary) > 30000 RETURN AVG(Salary)
+RESULTER <- GROUP BY Sex FROM EMPLOYEE HAVING AVG(Salary) > 30000 RETURN MAX(Salary)
 doCommand
 syntacticParse
 syntacticParseGROUPBY
@@ -45,120 +45,11 @@ executeGROUPBY
 TableCatalogue::getTable
 Table::groupBy
 External sorting for GROUP BY
-Table::Table
-Table::printRow
-Table::printRow
-Table::getCursor
-Cursor::Cursor
-BufferManager::getPage
-BufferManager::inPool
-BufferManager::insertIntoPool
-Page::Page
-Table::Table
-TableCatalogue::getTable
-Cursor::geNext
-Page::getRow
-Copying rows to the temp_groupBy table
-Table::printRow
-Table::printRow
-Cursor::geNext
-Page::getRow
-Table::printRow
-Table::printRow
-Cursor::geNext
-Page::getRow
-Table::printRow
-Table::printRow
-Cursor::geNext
-Page::getRow
-Table::printRow
-Table::printRow
-Cursor::geNext
-Page::getRow
-Table::printRow
-Table::printRow
-Cursor::geNext
-Page::getRow
-Table::printRow
-Table::printRow
-Cursor::geNext
-Page::getRow
-Table::printRow
-Table::printRow
-Cursor::geNext
-Page::getRow
-Table::printRow
-Table::printRow
-Cursor::geNext
-Page::getRow
-TableCatalogue::getTable
-Table::getNext
-after copying
-Loading temp table: temp/temp_GroupBy
-executeLOAD
-Table::Table
-Table::load
-Table::extractColumnNames
-Table::blockify
-BufferManager::writePage
-Page::Page
-Page::writePage
-TableCatalogue::~insertTable
-TableCatalogue::getTable
-Table::getCursor
-Cursor::Cursor
-BufferManager::getPage
-BufferManager::inPool
-BufferManager::insertIntoPool
-Page::Page
-Table::Table
-TableCatalogue::getTable
-Cursor::geNext
-Page::getRow
-Cursor::geNext
-Page::getRow
-Cursor::geNext
-Page::getRow
-Cursor::geNext
-Page::getRow
-Cursor::geNext
-Page::getRow
-Cursor::geNext
-Page::getRow
-Cursor::geNext
-Page::getRow
-Cursor::geNext
-Page::getRow
-Cursor::geNext
-Page::getRow
-TableCatalogue::getTable
-Table::getNext
+Table::sortTable
 Table::getColumnIndex
-Table::getCursor
-Cursor::Cursor
 BufferManager::getPage
-BufferManager::inPool
-BufferManager::getFromPool
-Cursor::geNext
-Page::getRow
-Cursor::geNext
-Page::getRow
-Cursor::geNext
-Page::getRow
-Cursor::geNext
-Page::getRow
-Cursor::geNext
-Page::getRow
-Cursor::geNext
-Page::getRow
-Cursor::geNext
-Page::getRow
-Cursor::geNext
-Page::getRow
-Cursor::geNext
-Page::getRow
-TableCatalogue::getTable
-Table::getNext
+Page::getAllRows
+Page::getRowCount
 Inside Sort Comp
 SORT COL INDEX: 2
 Inside Sort Comp
@@ -206,14 +97,12 @@ SORT COL INDEX: 2
 BufferManager::writePage
 Page::Page
 Page::writePage
+Table::externalSort
 Table::makePermanent
 Table::isPermanent
-BufferManager::deleteFile: Success
 Table::printRow
 Cursor::Cursor
 BufferManager::getPage
-BufferManager::inPool
-BufferManager::getFromPool
 Cursor::geNext
 Page::getRow
 Table::printRow
@@ -238,55 +127,73 @@ Table::printRow
 Cursor::geNext
 Page::getRow
 Table::printRow
-before sorting
-Table::Table
-Table::printRow
-Table::printRow
-Create a new table for the result
-Table::getColumnIndex
-Table::getColumnIndex
-Table::getColumnIndex
-Get column indices for groupingAttribute and aggregateAttribute
-Table::getCursor
-Cursor::Cursor
-BufferManager::getPage
-BufferManager::inPool
-BufferManager::getFromPool
-Cursor::geNext
-Page::getRow
-Performing GROUP BY and Aggregation
-Cursor::geNext
-Page::getRow
-Cursor::geNext
-Page::getRow
-Cursor::geNext
-Page::getRow
-Cursor::geNext
-Page::getRow
-Cursor::geNext
-Page::getRow
-Cursor::geNext
-Page::getRow
-Cursor::geNext
-Page::getRow
-Cursor::geNext
-Page::getRow
-TableCatalogue::getTable
-Table::getNext
-BufferManager::writePage
-Page::Page
-Page::writePage
-pages created
-TableCatalogue::~insertTable
-After make permanent
 Table::~unload
 BufferManager::deleteFile
 BufferManager::deleteFile: Success
 Table::isPermanent
-BufferManager::deleteFile: Err
-Table::deleteTable - Start
-Failed to delete file: ../data/temp/temp_GroupBy.csv
-Table::deleteTable - End
+Table::print
+Table::printRow
+Cursor::Cursor
+BufferManager::getPage
+Cursor::geNext
+Page::getRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+Table::Table
+Table::printRow
+Table::printRow
+Created new table for result
+Table::getColumnIndex
+Table::getColumnIndex
+Table::getColumnIndex
+Table::getCursor
+Cursor::Cursor
+BufferManager::getPage
+Cursor::geNext
+Page::getRow
+Starting GROUP BY processing
+Cursor::geNext
+Page::getRow
+Cursor::geNext
+Page::getRow
+Cursor::geNext
+Page::getRow
+Cursor::geNext
+Page::getRow
+Cursor::geNext
+Page::getRow
+Cursor::geNext
+Page::getRow
+Cursor::geNext
+Page::getRow
+Cursor::geNext
+Page::getRow
+TableCatalogue::getTable
+Table::getNext
+BufferManager::writePage
+Page::Page
+Page::writePage
+TableCatalogue::~insertTable
 Table::GroupBy - End
 ParseQuery::clear
 ParseQuery::clear

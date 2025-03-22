@@ -16,19 +16,26 @@ BufferManager::BufferManager()
 Page BufferManager::getPage(string tableName, int pageIndex)
 {
     logger.log("BufferManager::getPage");
-    if (strncmp(tableName.c_str(), "temp/", 5) == 0){
+    if (strncmp(tableName.c_str(), "temp/", 5) == 0) {
         tableName = tableName.substr(5);
     }
-    cout << "Table Name : " << tableName << endl;
-    string pageName = "../data/temp/"+tableName + "_Page" + to_string(pageIndex);
-    if (this->inPool(pageName)){
-        cout << "Page Name : " << pageName << endl;
-        return this->getFromPool(pageName);
+    
+    string pageName = "../data/temp/" + tableName + "_Page" + to_string(pageIndex);
+    
+    // Check if page exists in pool
+    for (auto& page : this->pages) {
+        if (page.pageName == pageName) {
+            return page;
+        }
     }
-    else{
-        cout << "Page Name 2 --- : " << pageName << endl;
-        return this->insertIntoPool(tableName, pageIndex);
+    
+    // If not in pool, create new page and add to pool
+    Page newPage(tableName, pageIndex);
+    if (this->pages.size() >= BLOCK_COUNT) {
+        this->pages.pop_front();
     }
+    this->pages.push_back(newPage);
+    return newPage;
 }
 
 Page BufferManager::getPage(string matrixName, int pageIndex, int is_matrix)
@@ -120,9 +127,27 @@ Page BufferManager::insertIntoPool(string tableName, int pageIndex, int is_matri
 void BufferManager::writePage(string tableName, int pageIndex, vector<vector<int>> rows, int rowCount)
 {
     logger.log("BufferManager::writePage");
+    string pageName = "../data/temp/" + tableName + "_Page" + to_string(pageIndex);
+    
+    // Create new page
     Page page(tableName, pageIndex, rows, rowCount);
-    // Page page(matrixName, pageIndex, rows, rowCount);
+    
+    // Write to disk
     page.writePage();
+    
+    // Update in pool if exists
+    for (auto& p : this->pages) {
+        if (p.pageName == pageName) {
+            p = page;
+            return;
+        }
+    }
+    
+    // If not in pool, add it
+    if (this->pages.size() >= BLOCK_COUNT) {
+        this->pages.pop_front();
+    }
+    this->pages.push_back(page);
 }
 
 /**

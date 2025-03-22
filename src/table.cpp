@@ -32,6 +32,9 @@ struct MyPair {
     int blockNum;
     int boundary;
     int cursorIndex;
+    
+    MyPair(vector<int> r, int b, int bound, int c) 
+        : row(r), blockNum(b), boundary(bound), cursorIndex(c) {}
 };
 
 struct CompareByFirstElement {
@@ -307,132 +310,102 @@ void Table::updateStatistics(vector<int> row)
     }
 }
 void Table::sortTable() {
-    cout << "Inside Table class sort function" << endl;
-
+    logger.log("Table::sortTable");
+    
+    // Initialize sorting parameters
     sortValues.resize(parsedQuery.sortStrategy.size(), 0);
     columnIndexes.resize(parsedQuery.sortStrategy.size());
-
+    
     // Store sorting order
     for (int i = 0; i < parsedQuery.sortStrategy.size(); i++) {
         if (parsedQuery.sortStrategy[i] == DESC)
             sortValues[i] = 1;
     }
-
+    
     // Store column indices to sort by
     for (int i = 0; i < parsedQuery.sortColumns.size(); i++) {
         columnIndexes[i] = this->getColumnIndex(parsedQuery.sortColumns[i]);
     }
-
-    long long pageDataRows = this->maxRowsPerBlock;
-    long long cnt = 0;
-    vector<vector<int>> pagesData;
-    Cursor cursor = this->getCursor();
-    int pageIndex = 0;
-
-    // Read each row and sort them page-wise
-    while (true) {
-        vector<int> dataRow = cursor.getNext();
-        if (dataRow.empty()) break;
-
-        pagesData.push_back(dataRow);
-        cnt++;
-
-        if (cnt == pageDataRows) {
-            cout << "Sorting page " << pageIndex << endl;
-            sort(pagesData.begin(), pagesData.end(), sortComparator);
-            bufferManager.writePage(this->tableName, pageIndex, pagesData, cnt);
-            cnt = 0;
-            pageIndex++;
-            pagesData.clear();
-        }
+    
+    // Sort each page individually first
+    for (int pageIndex = 0; pageIndex < this->blockCount; pageIndex++) {
+        Page page = bufferManager.getPage(this->tableName, pageIndex);
+        vector<vector<int>> pageData = page.getAllRows();
+        int rowCount = page.getrowcount();
+        
+        // Sort the page data
+        sort(pageData.begin(), pageData.begin() + rowCount, sortComparator);
+        
+        // Write back the sorted page
+        bufferManager.writePage(this->tableName, pageIndex, pageData, rowCount);
     }
-
-    // Write the remaining data if not empty
-    if (!pagesData.empty()) {
-        sort(pagesData.begin(), pagesData.end(), sortComparator);
-        bufferManager.writePage(this->tableName, pageIndex, pagesData, cnt);
-    }
-
-    // cout << "Calling External Sort" << endl;
+    
+    // Perform external merge sort
     this->externalSort();
+    
+    // Make the sorted table permanent
     this->makePermanent();
 }
 
 void Table::externalSort() {
-    // cout << "Performing External Sort using K-way merge" << endl;
+    logger.log("Table::externalSort");
     
-    int K = BLOCK_COUNT - 1;
-    int mergeIterations = ceil(log(this->blockCount) / log(K)) - 1;
-    // cout << "Total Iterations: " << mergeIterations << endl;
-
-    vector<Cursor> pageCursor;
-
-    for (int i = 0; i <= mergeIterations; i++) {
-        // cout << "Iteration: " << i + 1 << endl;
-        int size = pow(K, i);
+    int K = BLOCK_COUNT - 1;  // K-way merge
+    int mergeIterations = ceil(log(this->blockCount) / log(K));
+    
+    for (int iteration = 0; iteration < mergeIterations; iteration++) {
+        int size = pow(K, iteration);
         int clusters = ceil((double)this->blockCount / size);
-        // cout << "Total Clusters: " << clusters << endl;
-
-        int s = 0, e = size - 1;
-        vector<pair<int, int>> clusterData(clusters);
-        for (int j = 0; j < clusters; j++) {
-            clusterData[j] = {s, e};
-            s += size;
-            e = min(e + size, (int)this->blockCount - 1);
-        }
-
-        int globalPageIndex = 0;
-        for (int j = 0; j < ceil((double)clusters / K); j++) {
-            int start = j * size * K;
-            vector<pair<int, int>> boundaries;
-            while (start < min((int)this->blockCount, K * size * (j + 1))) {
-                boundaries.push_back({start, min(start + size - 1, (int)this->blockCount - 1)});
-                start += size;
+        
+        for (int cluster = 0; cluster < clusters; cluster++) {
+            int start = cluster * size;
+            int end = min(start + size - 1, (int)this->blockCount - 1);
+            
+            // Create output buffer for merged data
+            vector<vector<int>> outputBuffer;
+            outputBuffer.reserve(this->maxRowsPerBlock);
+            
+            // Create priority queue for K-way merge
+            priority_queue<MyPair, vector<MyPair>, CompareByFirstElement> pq;
+            vector<Cursor> cursors;
+            
+            // Initialize cursors for each block in the cluster
+            for (int i = start; i <= end; i++) {
+                Cursor cursor(this->tableName, i);
+                cursors.push_back(cursor);
+                
+                // Get first row from each block
+                vector<int> row = cursor.getNext();
+                if (!row.empty()) {
+                    pq.push({row, i, end, cursors.size() - 1});
+                }
             }
-
-            vector<vector<int>> mergeData;
-            for (int m = 0; m < boundaries.size(); m += K) {
-                priority_queue<MyPair, vector<MyPair>, CompareByFirstElement> pq;
-                vector<pair<Cursor, int>> cursorVec;
-
-                for (int r = m; r <= min(m + K - 1, (int)boundaries.size() - 1); r++) {
-                    Cursor cursor(this->tableName, boundaries[r].first);
-                    cursorVec.push_back({cursor, boundaries[r].first});
+            
+            // Merge blocks
+            int outputPageIndex = 0;
+            while (!pq.empty()) {
+                MyPair top = pq.top();
+                pq.pop();
+                
+                outputBuffer.push_back(top.row);
+                
+                // If output buffer is full, write it to disk
+                if (outputBuffer.size() == this->maxRowsPerBlock) {
+                    bufferManager.writePage(this->tableName, outputPageIndex, outputBuffer, outputBuffer.size());
+                    outputBuffer.clear();
+                    outputPageIndex++;
                 }
-
-                for (int c = 0; c < cursorVec.size(); c++) {
-                    vector<int> data = cursorVec[c].first.getNextPageRow();
-                    if (!data.empty()) {
-                        pq.push({data, cursorVec[c].first.pageIndex, cursorVec[c].second, c});
-                    }
+                
+                // Get next row from the block that provided the top element
+                vector<int> nextRow = cursors[top.cursorIndex].getNext();
+                if (!nextRow.empty()) {
+                    pq.push({nextRow, top.blockNum, top.boundary, top.cursorIndex});
                 }
-
-                while (!pq.empty()) {
-                    MyPair element = pq.top();
-                    pq.pop();
-                    mergeData.push_back(element.row);
-
-                    int cursorIndex = element.cursorIndex;
-                    vector<int> newRow = cursorVec[cursorIndex].first.getNextPageRow();
-                    if (!newRow.empty()) {
-                        pq.push({newRow, cursorVec[cursorIndex].first.pageIndex, element.boundary, cursorIndex});
-                    }
-
-                    if (mergeData.size() == (int)this->maxRowsPerBlock) {
-                        cout << "Writing to temp file: " << globalPageIndex << endl;
-                        ofstream fout("../data/temp/" + this->tableName + "Dummy" + to_string(globalPageIndex));
-                        for (const auto& row : mergeData) {
-                            for (size_t z = 0; z < row.size(); z++) {
-                                if (z != 0) fout << " ";
-                                fout << row[z];
-                            }
-                            fout << endl;
-                        }
-                        fout.close();
-                        mergeData.clear();
-                        globalPageIndex++;
-                    }
-                }
+            }
+            
+            // Write remaining rows in output buffer
+            if (!outputBuffer.empty()) {
+                bufferManager.writePage(this->tableName, outputPageIndex, outputBuffer, outputBuffer.size());
             }
         }
     }
@@ -762,54 +735,29 @@ void Table::groupBy() {
     Aggregate aggregateFunction = parsedQuery.returnAgg;
     string stringaggregateFunction = parsedQuery.returnAggregate;
 
+    cout << "\n=== Starting GROUP BY Operation ===" << endl;
+    cout << "Grouping by: " << groupingAttribute << endl;
+    cout << "Aggregating: " << aggregateAttribute << " with function: " << stringaggregateFunction << endl;
+    cout << "Having clause: " << havingaggregateAttribute << " " << (binOp == EQUAL ? "=" : (binOp == GREATER_THAN ? ">" : ">=")) << " " << attributeValue << endl;
+
     // First sort the table by the grouping attribute
     logger.log("External sorting for GROUP BY");
     parsedQuery.sortStrategy.clear();
     parsedQuery.sortStrategy.push_back(ASC);
     parsedQuery.sortColumns.clear();
     parsedQuery.sortColumns.push_back(groupingAttribute);
-    string tempTableName = "temp_GroupBy";
-    Table *sortedTable = new Table(tempTableName, this->columns);  
-
-    // Copy all rows to the temporary table
-    Cursor cursor = this->getCursor();
-    vector<int> row = cursor.getNext();
-    logger.log("Copying rows to the temp_groupBy table");
-    while (!row.empty()) {
-        sortedTable->writeRow(row);
-        row = cursor.getNext();
-    }
-    logger.log("after copying");
-
-    // Load and sort the temporary table
-    parsedQuery.loadRelationName = "temp/" + tempTableName;
-    logger.log("Loading temp table: " + parsedQuery.loadRelationName);
-    cout << "Loading temp table: " << parsedQuery.loadRelationName << endl;
-    executeLOAD();
-    sortedTable = tableCatalogue.getTable(tempTableName);  // Remove temp/ prefix when getting table
-    if (!sortedTable) {
-        cout << "Error: Failed to get sorted table from catalogue" << endl;
-        return;
-    }
-    cout << "Successfully loaded temp table. Row count: " << sortedTable->rowCount << endl;
-
-    Cursor cursor2 = sortedTable->getCursor();
-    vector<int> row2 = cursor2.getNext();
-    while (!row2.empty()) {
-        cout << "ROW : ";
-        for (int i = 0; i < row2.size(); i++) {
-            cout << row2[i] << " ";
-        }
-        cout << endl;
-        row2 = cursor2.getNext();
-    }
-    sortedTable->sortTable();
-    logger.log("before sorting");
-
+    
+    cout << "\nSorting table by " << groupingAttribute << "..." << endl;
+    this->sortTable();
+    this->unload();
+    
+    // print the table
+    this->print();
+    
     // Create the result table with appropriate columns
     vector<string> header = {groupingAttribute, stringaggregateFunction + "(" + aggregateAttribute + ")"};
     Table *groupedTable = new Table(newTableName, header);
-    logger.log("Create a new table for the result");
+    logger.log("Created new table for result");
     
     // Initialize variables for grouping
     int currentGroupValue = -1;
@@ -817,114 +765,115 @@ void Table::groupBy() {
     int havingaggregateCount = 0;
     int aggregationResult = 0;
     int aggregateCount = 0;
+    bool isFirstGroup = true;
 
     // Get column indices for grouping and aggregate attributes
-    int groupIndex = sortedTable->getColumnIndex(groupingAttribute);
-    int havingaggregateIndex = sortedTable->getColumnIndex(havingaggregateAttribute);
-    int aggregateIndex = sortedTable->getColumnIndex(aggregateAttribute);
-    logger.log("Get column indices for groupingAttribute and aggregateAttribute");
+    int groupIndex = this->getColumnIndex(groupingAttribute);
+    int havingaggregateIndex = this->getColumnIndex(havingaggregateAttribute);
+    int aggregateIndex = this->getColumnIndex(aggregateAttribute);
+    
+    cout << "\nColumn indices:" << endl;
+    cout << "Group index: " << groupIndex << endl;
+    cout << "Aggregate index: " << aggregateIndex << endl;
+    cout << "Having aggregate index: " << havingaggregateIndex << endl;
     
     // Process the sorted data
-    cursor = sortedTable->getCursor();
-    row = cursor.getNext();
-    logger.log("Performing GROUP BY and Aggregation");
+    Cursor cursor = this->getCursor();
+    vector<int> row = cursor.getNext();
+    logger.log("Starting GROUP BY processing");
+    
     int currRow = 0;
     long long totalRow = 0;
     int pageCounter = 0;
     vector<vector<int>> pageData;
 
-    while (true) {
-        if (row.empty()) {
-            // Process the last group
-            if (havingaggregateFunction == AVG && havingaggregateCount > 0)
-                havingaggregateResult /= havingaggregateCount;
-            if (currentGroupValue != -1 && havingaggregateCount > 0 && 
-                ((binOp == EQUAL && attributeValue == havingaggregateResult) ||
-                (binOp == GREATER_THAN && attributeValue < havingaggregateResult) ||
-                (binOp == GEQ && attributeValue <= havingaggregateResult))) {
-                
-                vector<int> resultRow;
-                if (aggregateFunction == MIN || aggregateFunction == MAX || aggregateFunction == SUM) {
-                    resultRow = {currentGroupValue, aggregationResult};
-                } else if (aggregateFunction == COUNT) {
-                    resultRow = {currentGroupValue, aggregateCount};
-                } else if (aggregateFunction == AVG) {
-                    resultRow = {currentGroupValue, aggregationResult / aggregateCount};
-                }
-                
-                pageData.push_back(resultRow);
-                currRow++;
-                totalRow++;
-            }
-            break;
-        }
-
+    cout << "\nProcessing rows..." << endl;
+    while (!row.empty()) {
         int groupValue = row[groupIndex];
         int aggregateValue = row[aggregateIndex];
         int havingaggregateValue = row[havingaggregateIndex];
 
         if (groupValue != currentGroupValue) {
             // Process the previous group
-            if (havingaggregateFunction == AVG && havingaggregateCount > 0)
-                havingaggregateResult /= havingaggregateCount;
-            if (currentGroupValue != -1 && havingaggregateCount > 0 && 
-                ((binOp == EQUAL && attributeValue == havingaggregateResult) ||
-                (binOp == GREATER_THAN && attributeValue < havingaggregateResult) ||
-                (binOp == GEQ && attributeValue <= havingaggregateResult))) {
-                
-                vector<int> resultRow;
-                if (aggregateFunction == MIN || aggregateFunction == MAX || aggregateFunction == SUM) {
-                    resultRow = {currentGroupValue, aggregationResult};
-                } else if (aggregateFunction == COUNT) {
-                    resultRow = {currentGroupValue, aggregateCount};
-                } else if (aggregateFunction == AVG) {
-                    resultRow = {currentGroupValue, aggregationResult / aggregateCount};
+            if (!isFirstGroup) {
+                if (havingaggregateFunction == AVG && havingaggregateCount > 0) {
+                    havingaggregateResult = havingaggregateResult / havingaggregateCount;
                 }
                 
-                pageData.push_back(resultRow);
-                currRow++;
-                totalRow++;
+                cout << "\nProcessing group with value: " << currentGroupValue << endl;
+                cout << "Having aggregate result: " << havingaggregateResult << endl;
+                cout << "Having aggregate count: " << havingaggregateCount << endl;
+                
+                bool havingConditionMet = false;
+                if (havingaggregateCount > 0) {
+                    if (binOp == EQUAL) {
+                        havingConditionMet = (havingaggregateResult == attributeValue);
+                    } else if (binOp == GREATER_THAN) {
+                        havingConditionMet = (havingaggregateResult > attributeValue);
+                    } else if (binOp == GEQ) {
+                        havingConditionMet = (havingaggregateResult >= attributeValue);
+                    }
+                }
+
+                if (havingConditionMet) {
+                    cout << "Having condition met for group " << currentGroupValue << endl;
+                    vector<int> resultRow;
+                    
+                    if (aggregateFunction == MIN || aggregateFunction == MAX || aggregateFunction == SUM) {
+                        resultRow = {currentGroupValue, aggregationResult};
+                    } else if (aggregateFunction == COUNT) {
+                        resultRow = {currentGroupValue, aggregateCount};
+                    } else if (aggregateFunction == AVG && aggregateCount > 0) {
+                        resultRow = {currentGroupValue, aggregationResult / aggregateCount};
+                    }
+                    
+                    cout << "Adding result row: [" << resultRow[0] << ", " << resultRow[1] << "]" << endl;
+                    pageData.push_back(resultRow);
+                    currRow++;
+                    totalRow++;
+                }
             }
             
             // Start new group
             currentGroupValue = groupValue;
-            aggregationResult = 0;
-            aggregateCount = 0;
-            havingaggregateCount = 0;
-            havingaggregateResult = 0;
-        }
+            aggregationResult = aggregateValue;  // Initialize with first value
+            aggregateCount = 1;
+            havingaggregateCount = 1;
+            havingaggregateResult = havingaggregateValue;
+            isFirstGroup = false;
+        } else {
+            // Update aggregation results for current group
+            if (aggregateFunction == MIN) {
+                aggregationResult = min(aggregationResult, aggregateValue);
+            } else if (aggregateFunction == MAX) {
+                aggregationResult = max(aggregationResult, aggregateValue);
+            } else if (aggregateFunction == SUM) {
+                aggregationResult += aggregateValue;
+            } else if (aggregateFunction == COUNT) {
+                aggregateCount++;
+            } else if (aggregateFunction == AVG) {
+                aggregationResult += aggregateValue;
+                aggregateCount++;
+            }
 
-        // Update aggregation results
-        if (aggregateFunction == MIN) {
-            aggregationResult = min(aggregationResult, aggregateValue);
-        } else if (aggregateFunction == MAX) {
-            aggregationResult = max(aggregationResult, aggregateValue);
-        } else if (aggregateFunction == SUM) {
-            aggregationResult += aggregateValue;
-        } else if (aggregateFunction == COUNT) {
-            aggregateCount++;
-        } else if (aggregateFunction == AVG) {
-            aggregationResult += aggregateValue;
-            aggregateCount++;
-        }
-
-        // Update having clause results
-        if (havingaggregateFunction == MIN) {
-            havingaggregateResult = min(havingaggregateResult, havingaggregateValue);
-        } else if (havingaggregateFunction == MAX) {
-            havingaggregateResult = max(havingaggregateResult, havingaggregateValue);
-        } else if (havingaggregateFunction == SUM) {
-            havingaggregateResult += havingaggregateValue;
-        } else if (havingaggregateFunction == COUNT) {
-            havingaggregateCount++;
-            havingaggregateResult++;
-        } else if (havingaggregateFunction == AVG) {
-            havingaggregateResult += havingaggregateValue;
-            havingaggregateCount++;
+            // Update having clause results
+            if (havingaggregateFunction == MIN) {
+                havingaggregateResult = min(havingaggregateResult, havingaggregateValue);
+            } else if (havingaggregateFunction == MAX) {
+                havingaggregateResult = max(havingaggregateResult, havingaggregateValue);
+            } else if (havingaggregateFunction == SUM) {
+                havingaggregateResult += havingaggregateValue;
+            } else if (havingaggregateFunction == COUNT) {
+                havingaggregateCount++;
+            } else if (havingaggregateFunction == AVG) {
+                havingaggregateResult += havingaggregateValue;
+                havingaggregateCount++;
+            }
         }
 
         // Write page if full
         if (currRow == groupedTable->maxRowsPerBlock) {
+            cout << "Writing page " << pageCounter << " with " << currRow << " rows" << endl;
             bufferManager.writePage(groupedTable->tableName, pageCounter, pageData, currRow);
             pageCounter++;
             currRow = 0;
@@ -934,12 +883,55 @@ void Table::groupBy() {
         row = cursor.getNext();
     }
 
+    // Process the last group
+    if (!isFirstGroup) {
+        if (havingaggregateFunction == AVG && havingaggregateCount > 0) {
+            havingaggregateResult = havingaggregateResult / havingaggregateCount;
+        }
+        
+        cout << "\nProcessing final group with value: " << currentGroupValue << endl;
+        cout << "Having aggregate result: " << havingaggregateResult << endl;
+        cout << "Having aggregate count: " << havingaggregateCount << endl;
+        
+        bool havingConditionMet = false;
+        if (havingaggregateCount > 0) {
+            if (binOp == EQUAL) {
+                havingConditionMet = (havingaggregateResult == attributeValue);
+            } else if (binOp == GREATER_THAN) {
+                havingConditionMet = (havingaggregateResult > attributeValue);
+            } else if (binOp == GEQ) {
+                havingConditionMet = (havingaggregateResult >= attributeValue);
+            }
+        }
+
+        if (havingConditionMet) {
+            cout << "Having condition met for final group " << currentGroupValue << endl;
+            vector<int> resultRow;
+            
+            if (aggregateFunction == MIN || aggregateFunction == MAX || aggregateFunction == SUM) {
+                resultRow = {currentGroupValue, aggregationResult};
+            } else if (aggregateFunction == COUNT) {
+                resultRow = {currentGroupValue, aggregateCount};
+            } else if (aggregateFunction == AVG && aggregateCount > 0) {
+                resultRow = {currentGroupValue, aggregationResult / aggregateCount};
+            }
+            
+            cout << "Adding final result row: [" << resultRow[0] << ", " << resultRow[1] << "]" << endl;
+            pageData.push_back(resultRow);
+            currRow++;
+            totalRow++;
+        }
+    }
+
     // Write remaining data
     if (!pageData.empty()) {
+        cout << "Writing final page " << pageCounter << " with " << currRow << " rows" << endl;
         bufferManager.writePage(groupedTable->tableName, pageCounter, pageData, currRow);
         pageCounter++;
     }
-    logger.log("pages created");
+    
+    cout << "\nTotal rows in result: " << totalRow << endl;
+    cout << "Total pages: " << pageCounter << endl;
     
     // Initialize the result table properly
     groupedTable->rowCount = totalRow;
@@ -952,7 +944,7 @@ void Table::groupBy() {
     
     // Write the header to the CSV file
     ofstream outputFile(groupedTable->sourceFileName, ios::out);
-    outputFile << header[0] << ", " << header[1] << endl;
+    outputFile << header[0] << "," << header[1] << endl;
     outputFile.close();
     
     // Append the data to the CSV file
@@ -966,7 +958,7 @@ void Table::groupBy() {
             bool firstWord = true;
             while (iss >> word) {
                 if (!firstWord) {
-                    outputFile << ", ";  
+                    outputFile << ",";  
                 }
                 outputFile << word;
                 firstWord = false;
@@ -977,8 +969,6 @@ void Table::groupBy() {
     }
     outputFile.close();
     
-    logger.log("After make permanent");
-    sortedTable->unload();
-    sortedTable->deleteTable();
+    cout << "\n=== GROUP BY Operation Completed ===" << endl;
     logger.log("Table::GroupBy - End");
 }
