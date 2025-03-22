@@ -94,7 +94,7 @@ Page::getRow
 TableCatalogue::getTable
 Table::getNext
 after copying
-1
+Loading temp table: temp/temp_GroupBy
 executeLOAD
 Table::Table
 Table::load
@@ -133,6 +133,161 @@ Cursor::geNext
 Page::getRow
 TableCatalogue::getTable
 Table::getNext
+Table::getColumnIndex
+Table::getCursor
+Cursor::Cursor
+BufferManager::getPage
+BufferManager::inPool
+BufferManager::getFromPool
+Cursor::geNext
+Page::getRow
+Cursor::geNext
+Page::getRow
+Cursor::geNext
+Page::getRow
+Cursor::geNext
+Page::getRow
+Cursor::geNext
+Page::getRow
+Cursor::geNext
+Page::getRow
+Cursor::geNext
+Page::getRow
+Cursor::geNext
+Page::getRow
+Cursor::geNext
+Page::getRow
+TableCatalogue::getTable
+Table::getNext
+Inside Sort Comp
+SORT COL INDEX: 2
+Inside Sort Comp
+SORT COL INDEX: 2
+Inside Sort Comp
+SORT COL INDEX: 2
+Inside Sort Comp
+SORT COL INDEX: 2
+Inside Sort Comp
+SORT COL INDEX: 2
+Inside Sort Comp
+SORT COL INDEX: 2
+Inside Sort Comp
+SORT COL INDEX: 2
+Inside Sort Comp
+SORT COL INDEX: 2
+Inside Sort Comp
+SORT COL INDEX: 2
+Inside Sort Comp
+SORT COL INDEX: 2
+Inside Sort Comp
+SORT COL INDEX: 2
+Inside Sort Comp
+SORT COL INDEX: 2
+Inside Sort Comp
+SORT COL INDEX: 2
+Inside Sort Comp
+SORT COL INDEX: 2
+Inside Sort Comp
+SORT COL INDEX: 2
+Inside Sort Comp
+SORT COL INDEX: 2
+Inside Sort Comp
+SORT COL INDEX: 2
+Inside Sort Comp
+SORT COL INDEX: 2
+Inside Sort Comp
+SORT COL INDEX: 2
+Inside Sort Comp
+SORT COL INDEX: 2
+Inside Sort Comp
+SORT COL INDEX: 2
+Inside Sort Comp
+SORT COL INDEX: 2
+BufferManager::writePage
+Page::Page
+Page::writePage
+Table::makePermanent
+Table::isPermanent
+BufferManager::deleteFile: Success
+Table::printRow
+Cursor::Cursor
+BufferManager::getPage
+BufferManager::inPool
+BufferManager::getFromPool
+Cursor::geNext
+Page::getRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+before sorting
+Table::Table
+Table::printRow
+Table::printRow
+Create a new table for the result
+Table::getColumnIndex
+Table::getColumnIndex
+Table::getColumnIndex
+Get column indices for groupingAttribute and aggregateAttribute
+Table::getCursor
+Cursor::Cursor
+BufferManager::getPage
+BufferManager::inPool
+BufferManager::getFromPool
+Cursor::geNext
+Page::getRow
+Performing GROUP BY and Aggregation
+Cursor::geNext
+Page::getRow
+Cursor::geNext
+Page::getRow
+Cursor::geNext
+Page::getRow
+Cursor::geNext
+Page::getRow
+Cursor::geNext
+Page::getRow
+Cursor::geNext
+Page::getRow
+Cursor::geNext
+Page::getRow
+Cursor::geNext
+Page::getRow
+TableCatalogue::getTable
+Table::getNext
+BufferManager::writePage
+Page::Page
+Page::writePage
+pages created
+TableCatalogue::~insertTable
+After make permanent
+Table::~unload
+BufferManager::deleteFile
+BufferManager::deleteFile: Success
+Table::isPermanent
+BufferManager::deleteFile: Err
+Table::deleteTable - Start
+Failed to delete file: ../data/temp/temp_GroupBy.csv
+Table::deleteTable - End
+Table::GroupBy - End
 ParseQuery::clear
 ParseQuery::clear
 

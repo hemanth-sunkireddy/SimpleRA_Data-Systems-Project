@@ -803,182 +803,182 @@ void Table::groupBy() {
         cout << endl;
         row2 = cursor2.getNext();
     }
-    // sortedTable->sortTable();
-    // logger.log("before sorting");
+    sortedTable->sortTable();
+    logger.log("before sorting");
 
-    // // Create the result table with appropriate columns
-    // vector<string> header = {groupingAttribute, stringaggregateFunction + "(" + aggregateAttribute + ")"};
-    // Table *groupedTable = new Table(newTableName, header);
-    // logger.log("Create a new table for the result");
+    // Create the result table with appropriate columns
+    vector<string> header = {groupingAttribute, stringaggregateFunction + "(" + aggregateAttribute + ")"};
+    Table *groupedTable = new Table(newTableName, header);
+    logger.log("Create a new table for the result");
     
-    // // Initialize variables for grouping
-    // int currentGroupValue = -1;
-    // int havingaggregateResult = 0;
-    // int havingaggregateCount = 0;
-    // int aggregationResult = 0;
-    // int aggregateCount = 0;
+    // Initialize variables for grouping
+    int currentGroupValue = -1;
+    int havingaggregateResult = 0;
+    int havingaggregateCount = 0;
+    int aggregationResult = 0;
+    int aggregateCount = 0;
 
-    // // Get column indices for grouping and aggregate attributes
-    // int groupIndex = sortedTable->getColumnIndex(groupingAttribute);
-    // int havingaggregateIndex = sortedTable->getColumnIndex(havingaggregateAttribute);
-    // int aggregateIndex = sortedTable->getColumnIndex(aggregateAttribute);
-    // logger.log("Get column indices for groupingAttribute and aggregateAttribute");
+    // Get column indices for grouping and aggregate attributes
+    int groupIndex = sortedTable->getColumnIndex(groupingAttribute);
+    int havingaggregateIndex = sortedTable->getColumnIndex(havingaggregateAttribute);
+    int aggregateIndex = sortedTable->getColumnIndex(aggregateAttribute);
+    logger.log("Get column indices for groupingAttribute and aggregateAttribute");
     
-    // // Process the sorted data
-    // cursor = sortedTable->getCursor();
-    // row = cursor.getNext();
-    // logger.log("Performing GROUP BY and Aggregation");
-    // int currRow = 0;
-    // long long totalRow = 0;
-    // int pageCounter = 0;
-    // vector<vector<int>> pageData;
+    // Process the sorted data
+    cursor = sortedTable->getCursor();
+    row = cursor.getNext();
+    logger.log("Performing GROUP BY and Aggregation");
+    int currRow = 0;
+    long long totalRow = 0;
+    int pageCounter = 0;
+    vector<vector<int>> pageData;
 
-    // while (true) {
-    //     if (row.empty()) {
-    //         // Process the last group
-    //         if (havingaggregateFunction == AVG && havingaggregateCount > 0)
-    //             havingaggregateResult /= havingaggregateCount;
-    //         if (currentGroupValue != -1 && havingaggregateCount > 0 && 
-    //             ((binOp == EQUAL && attributeValue == havingaggregateResult) ||
-    //             (binOp == GREATER_THAN && attributeValue < havingaggregateResult) ||
-    //             (binOp == GEQ && attributeValue <= havingaggregateResult))) {
+    while (true) {
+        if (row.empty()) {
+            // Process the last group
+            if (havingaggregateFunction == AVG && havingaggregateCount > 0)
+                havingaggregateResult /= havingaggregateCount;
+            if (currentGroupValue != -1 && havingaggregateCount > 0 && 
+                ((binOp == EQUAL && attributeValue == havingaggregateResult) ||
+                (binOp == GREATER_THAN && attributeValue < havingaggregateResult) ||
+                (binOp == GEQ && attributeValue <= havingaggregateResult))) {
                 
-    //             vector<int> resultRow;
-    //             if (aggregateFunction == MIN || aggregateFunction == MAX || aggregateFunction == SUM) {
-    //                 resultRow = {currentGroupValue, aggregationResult};
-    //             } else if (aggregateFunction == COUNT) {
-    //                 resultRow = {currentGroupValue, aggregateCount};
-    //             } else if (aggregateFunction == AVG) {
-    //                 resultRow = {currentGroupValue, aggregationResult / aggregateCount};
-    //             }
+                vector<int> resultRow;
+                if (aggregateFunction == MIN || aggregateFunction == MAX || aggregateFunction == SUM) {
+                    resultRow = {currentGroupValue, aggregationResult};
+                } else if (aggregateFunction == COUNT) {
+                    resultRow = {currentGroupValue, aggregateCount};
+                } else if (aggregateFunction == AVG) {
+                    resultRow = {currentGroupValue, aggregationResult / aggregateCount};
+                }
                 
-    //             pageData.push_back(resultRow);
-    //             currRow++;
-    //             totalRow++;
-    //         }
-    //         break;
-    //     }
+                pageData.push_back(resultRow);
+                currRow++;
+                totalRow++;
+            }
+            break;
+        }
 
-    //     int groupValue = row[groupIndex];
-    //     int aggregateValue = row[aggregateIndex];
-    //     int havingaggregateValue = row[havingaggregateIndex];
+        int groupValue = row[groupIndex];
+        int aggregateValue = row[aggregateIndex];
+        int havingaggregateValue = row[havingaggregateIndex];
 
-    //     if (groupValue != currentGroupValue) {
-    //         // Process the previous group
-    //         if (havingaggregateFunction == AVG && havingaggregateCount > 0)
-    //             havingaggregateResult /= havingaggregateCount;
-    //         if (currentGroupValue != -1 && havingaggregateCount > 0 && 
-    //             ((binOp == EQUAL && attributeValue == havingaggregateResult) ||
-    //             (binOp == GREATER_THAN && attributeValue < havingaggregateResult) ||
-    //             (binOp == GEQ && attributeValue <= havingaggregateResult))) {
+        if (groupValue != currentGroupValue) {
+            // Process the previous group
+            if (havingaggregateFunction == AVG && havingaggregateCount > 0)
+                havingaggregateResult /= havingaggregateCount;
+            if (currentGroupValue != -1 && havingaggregateCount > 0 && 
+                ((binOp == EQUAL && attributeValue == havingaggregateResult) ||
+                (binOp == GREATER_THAN && attributeValue < havingaggregateResult) ||
+                (binOp == GEQ && attributeValue <= havingaggregateResult))) {
                 
-    //             vector<int> resultRow;
-    //             if (aggregateFunction == MIN || aggregateFunction == MAX || aggregateFunction == SUM) {
-    //                 resultRow = {currentGroupValue, aggregationResult};
-    //             } else if (aggregateFunction == COUNT) {
-    //                 resultRow = {currentGroupValue, aggregateCount};
-    //             } else if (aggregateFunction == AVG) {
-    //                 resultRow = {currentGroupValue, aggregationResult / aggregateCount};
-    //             }
+                vector<int> resultRow;
+                if (aggregateFunction == MIN || aggregateFunction == MAX || aggregateFunction == SUM) {
+                    resultRow = {currentGroupValue, aggregationResult};
+                } else if (aggregateFunction == COUNT) {
+                    resultRow = {currentGroupValue, aggregateCount};
+                } else if (aggregateFunction == AVG) {
+                    resultRow = {currentGroupValue, aggregationResult / aggregateCount};
+                }
                 
-    //             pageData.push_back(resultRow);
-    //             currRow++;
-    //             totalRow++;
-    //         }
+                pageData.push_back(resultRow);
+                currRow++;
+                totalRow++;
+            }
             
-    //         // Start new group
-    //         currentGroupValue = groupValue;
-    //         aggregationResult = 0;
-    //         aggregateCount = 0;
-    //         havingaggregateCount = 0;
-    //         havingaggregateResult = 0;
-    //     }
+            // Start new group
+            currentGroupValue = groupValue;
+            aggregationResult = 0;
+            aggregateCount = 0;
+            havingaggregateCount = 0;
+            havingaggregateResult = 0;
+        }
 
-    //     // Update aggregation results
-    //     if (aggregateFunction == MIN) {
-    //         aggregationResult = min(aggregationResult, aggregateValue);
-    //     } else if (aggregateFunction == MAX) {
-    //         aggregationResult = max(aggregationResult, aggregateValue);
-    //     } else if (aggregateFunction == SUM) {
-    //         aggregationResult += aggregateValue;
-    //     } else if (aggregateFunction == COUNT) {
-    //         aggregateCount++;
-    //     } else if (aggregateFunction == AVG) {
-    //         aggregationResult += aggregateValue;
-    //         aggregateCount++;
-    //     }
+        // Update aggregation results
+        if (aggregateFunction == MIN) {
+            aggregationResult = min(aggregationResult, aggregateValue);
+        } else if (aggregateFunction == MAX) {
+            aggregationResult = max(aggregationResult, aggregateValue);
+        } else if (aggregateFunction == SUM) {
+            aggregationResult += aggregateValue;
+        } else if (aggregateFunction == COUNT) {
+            aggregateCount++;
+        } else if (aggregateFunction == AVG) {
+            aggregationResult += aggregateValue;
+            aggregateCount++;
+        }
 
-    //     // Update having clause results
-    //     if (havingaggregateFunction == MIN) {
-    //         havingaggregateResult = min(havingaggregateResult, havingaggregateValue);
-    //     } else if (havingaggregateFunction == MAX) {
-    //         havingaggregateResult = max(havingaggregateResult, havingaggregateValue);
-    //     } else if (havingaggregateFunction == SUM) {
-    //         havingaggregateResult += havingaggregateValue;
-    //     } else if (havingaggregateFunction == COUNT) {
-    //         havingaggregateCount++;
-    //         havingaggregateResult++;
-    //     } else if (havingaggregateFunction == AVG) {
-    //         havingaggregateResult += havingaggregateValue;
-    //         havingaggregateCount++;
-    //     }
+        // Update having clause results
+        if (havingaggregateFunction == MIN) {
+            havingaggregateResult = min(havingaggregateResult, havingaggregateValue);
+        } else if (havingaggregateFunction == MAX) {
+            havingaggregateResult = max(havingaggregateResult, havingaggregateValue);
+        } else if (havingaggregateFunction == SUM) {
+            havingaggregateResult += havingaggregateValue;
+        } else if (havingaggregateFunction == COUNT) {
+            havingaggregateCount++;
+            havingaggregateResult++;
+        } else if (havingaggregateFunction == AVG) {
+            havingaggregateResult += havingaggregateValue;
+            havingaggregateCount++;
+        }
 
-    //     // Write page if full
-    //     if (currRow == groupedTable->maxRowsPerBlock) {
-    //         bufferManager.writePage(groupedTable->tableName, pageCounter, pageData, currRow);
-    //         pageCounter++;
-    //         currRow = 0;
-    //         pageData.clear();
-    //     }
+        // Write page if full
+        if (currRow == groupedTable->maxRowsPerBlock) {
+            bufferManager.writePage(groupedTable->tableName, pageCounter, pageData, currRow);
+            pageCounter++;
+            currRow = 0;
+            pageData.clear();
+        }
 
-    //     row = cursor.getNext();
-    // }
+        row = cursor.getNext();
+    }
 
-    // // Write remaining data
-    // if (!pageData.empty()) {
-    //     bufferManager.writePage(groupedTable->tableName, pageCounter, pageData, currRow);
-    //     pageCounter++;
-    // }
-    // logger.log("pages created");
+    // Write remaining data
+    if (!pageData.empty()) {
+        bufferManager.writePage(groupedTable->tableName, pageCounter, pageData, currRow);
+        pageCounter++;
+    }
+    logger.log("pages created");
     
-    // // Initialize the result table properly
-    // groupedTable->rowCount = totalRow;
-    // groupedTable->columnCount = 2;
-    // groupedTable->blockCount = pageCounter;
-    // groupedTable->sourceFileName = "../data/" + groupedTable->tableName + ".csv";
+    // Initialize the result table properly
+    groupedTable->rowCount = totalRow;
+    groupedTable->columnCount = 2;
+    groupedTable->blockCount = pageCounter;
+    groupedTable->sourceFileName = "../data/" + groupedTable->tableName + ".csv";
     
-    // // Insert the table into the catalog
-    // tableCatalogue.insertTable(groupedTable);
+    // Insert the table into the catalog
+    tableCatalogue.insertTable(groupedTable);
     
-    // // Write the header to the CSV file
-    // ofstream outputFile(groupedTable->sourceFileName, ios::out);
-    // outputFile << header[0] << ", " << header[1] << endl;
-    // outputFile.close();
+    // Write the header to the CSV file
+    ofstream outputFile(groupedTable->sourceFileName, ios::out);
+    outputFile << header[0] << ", " << header[1] << endl;
+    outputFile.close();
     
-    // // Append the data to the CSV file
-    // outputFile.open(groupedTable->sourceFileName, ios::app);
-    // for (int i = 0; i < pageCounter; i++) {
-    //     ifstream inputFile("../data/temp/" + groupedTable->tableName + "_Page" + to_string(i));
-    //     string line;
-    //     while (getline(inputFile, line)) {
-    //         istringstream iss(line);
-    //         string word;
-    //         bool firstWord = true;
-    //         while (iss >> word) {
-    //             if (!firstWord) {
-    //                 outputFile << ", ";  
-    //             }
-    //             outputFile << word;
-    //             firstWord = false;
-    //         }
-    //         outputFile << endl;
-    //     }
-    //     inputFile.close();
-    // }
-    // outputFile.close();
+    // Append the data to the CSV file
+    outputFile.open(groupedTable->sourceFileName, ios::app);
+    for (int i = 0; i < pageCounter; i++) {
+        ifstream inputFile("../data/temp/" + groupedTable->tableName + "_Page" + to_string(i));
+        string line;
+        while (getline(inputFile, line)) {
+            istringstream iss(line);
+            string word;
+            bool firstWord = true;
+            while (iss >> word) {
+                if (!firstWord) {
+                    outputFile << ", ";  
+                }
+                outputFile << word;
+                firstWord = false;
+            }
+            outputFile << endl;
+        }
+        inputFile.close();
+    }
+    outputFile.close();
     
-    // logger.log("After make permanent");
-    // sortedTable->unload();
-    // sortedTable->deleteTable();
-    // logger.log("Table::GroupBy - End");
+    logger.log("After make permanent");
+    sortedTable->unload();
+    sortedTable->deleteTable();
+    logger.log("Table::GroupBy - End");
 }

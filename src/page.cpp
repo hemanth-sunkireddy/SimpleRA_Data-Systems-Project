@@ -36,11 +36,21 @@ Page::Page(string tableName, int pageIndex)
     cout << "Table Name test : " << tableName << endl;
     if (strncmp(tableName.c_str(), "temp_Group", 9) == 0){
         cout << "Table Name : " << tableName << endl;
-        table = *tableCatalogue.getTable("temp/" + tableName);
+        Table* tempTable = tableCatalogue.getTable(tableName);
+        if (!tempTable) {
+            cerr << "Error: Temporary table not found in catalog" << endl;
+            return;
+        }
+        table = *tempTable;
         cout << "Table Name 2 : " << table.tableName << endl;
     }
     else{
-        table = *tableCatalogue.getTable(tableName);
+        Table* tempTable = tableCatalogue.getTable(tableName);
+        if (!tempTable) {
+            cerr << "Error: Table not found in catalog" << endl;
+            return;
+        }
+        table = *tempTable;
     }
     this->columnCount = table.columnCount;
     uint maxRowCount = table.maxRowsPerBlock;
