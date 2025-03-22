@@ -52,6 +52,8 @@ public:
     void externalSort();
     int getColumnIndex(string columnName);
     void unload();
+    void groupBy();
+    void deleteTable();
 
     /**
      * @brief Static function that takes a vector of valued and prints them out in a

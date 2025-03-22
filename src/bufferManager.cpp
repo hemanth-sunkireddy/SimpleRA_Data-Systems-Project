@@ -30,7 +30,9 @@ Page BufferManager::getPage(string matrixName, int pageIndex, int is_matrix)
     logger.log("BufferManager::getPage");
     string pageName = "../data/temp/"+matrixName + "_Page" + to_string(pageIndex);
     if (this->inPool(pageName)){
-        return this->getFromPool(pageName);
+        // return this->getFromPool(pageName);
+        this->deletePage(pageName);
+        return this->insertIntoPool(matrixName, pageIndex, 1);
     }
     else{
         return this->insertIntoPool(matrixName, pageIndex, 1);

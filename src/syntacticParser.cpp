@@ -55,6 +55,8 @@ bool syntacticParse()
     else if (possibleQueryType == "SORT"){
             return syntacticParseSORT();
     }
+    else if (tokenizedQuery[2] == "GROUP" && tokenizedQuery[3] == "BY")
+        return syntacticParseGROUP_BY();
     else
     {
         string resultantRelationName = possibleQueryType;
@@ -76,7 +78,7 @@ bool syntacticParse()
             return syntacticParseDISTINCT();
         else
         {
-            cout << "SYNTAX ERROR" << endl;
+            cout << "SYNTAX ERROR {basic error}" << endl;
             return false;
         }
     }

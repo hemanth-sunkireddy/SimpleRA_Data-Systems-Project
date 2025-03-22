@@ -15,6 +15,7 @@ enum QueryType
     LOAD,
     LOAD_MATRIX,
     PRINT,
+    GROUP_BY,
     PRINT_MATRIX,
     PROJECTION,
     RENAME,
@@ -50,6 +51,16 @@ enum SelectType
     COLUMN,
     INT_LITERAL,
     NO_SELECT_CLAUSE
+};
+
+enum Aggregate
+{
+    NO_AGGREGATE_FUNCTION,
+    COUNT,
+    SUM,
+    AVG,
+    MIN,
+    MAX
 };
 
 class ParsedQuery
@@ -92,6 +103,19 @@ public:
     string renameFromColumnName = "";
     string renameToColumnName = "";
     string renameRelationName = "";
+
+    // GROUP BY REQUIREMENTS
+    string groupByResultRelationName = "";
+    string groupAttribute = "";
+    string groupRelation = "";
+    string havingAttribute = "";
+    string havingAggregate = "";
+    string returnAggregate = "";
+    string returnAttribute = "";
+    int havingValue = 0;
+    Aggregate havingAgg = NO_AGGREGATE_FUNCTION;
+    Aggregate returnAgg = NO_AGGREGATE_FUNCTION;
+    BinaryOperator groupBinaryOperator = NO_BINOP_CLAUSE;
 
     SelectType selectType = NO_SELECT_CLAUSE;
     BinaryOperator selectionBinaryOperator = NO_BINOP_CLAUSE;
@@ -138,6 +162,7 @@ bool syntacticParseSOURCE();
 bool syntacticParseCROSSTRANSPOSE();
 bool syntacticParseROTATE_MATRIX();
 bool syntacticParseCHECKANTISYM();
+bool syntacticParseGROUP_BY();
 
 bool isFileExists(string tableName);
 bool isQueryFile(string fileName);

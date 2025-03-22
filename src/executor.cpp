@@ -12,6 +12,7 @@ void executeCommand(){
         case JOIN: executeJOIN(); break;
         case LIST: executeLIST(); break;
         case LOAD: executeLOAD(); break;
+        case GROUP_BY: executeGROUP_BY(); break;
         case LOAD_MATRIX : executeLOAD_MATRIX(); break;
         case PRINT: executePRINT(); break;
         case PRINT_MATRIX:executePRINT_MATRIX(); break;

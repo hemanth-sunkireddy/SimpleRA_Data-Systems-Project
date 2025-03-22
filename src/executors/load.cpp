@@ -66,6 +66,8 @@ void executeLOAD()
 {
     logger.log("executeLOAD");
     Table *table = new Table(parsedQuery.loadRelationName);
+    cout << "LOADING : " << parsedQuery.loadRelationName << endl;
+    cout << "PATH : " << table->sourceFileName << endl;
     if (table->load())
     {
         tableCatalogue.insertTable(table);

@@ -1,0 +1,243 @@
+BufferManager::BufferManager
+ParseQuery::clear
+
+Reading New Command: 
+LOAD EMPLOYEE
+doCommand
+syntacticParse
+syntacticParseLOAD
+semanticParse
+semanticParseLOAD
+TableCatalogue::isTable
+executeLOAD
+Table::Table
+Table::load
+Table::extractColumnNames
+Table::blockify
+BufferManager::writePage
+Page::Page
+Page::writePage
+TableCatalogue::~insertTable
+ParseQuery::clear
+
+Reading New Command: 
+RSS <- GROUP BY Sex FROM EMPLOYEE HAVING AVG(Salary) > 30000 RETURN AVG(Salary)
+doCommand
+syntacticParse
+syntacticParseGROUPBY
+semanticParse
+semanticParseGROUPBY
+TableCatalogue::isTable
+TableCatalogue::isTable
+TableCatalogue::isColumnFromTable
+TableCatalogue::isTable
+TableCatalogue::getTable
+Table::isColumn
+TableCatalogue::isColumnFromTable
+TableCatalogue::isTable
+TableCatalogue::getTable
+Table::isColumn
+TableCatalogue::isColumnFromTable
+TableCatalogue::isTable
+TableCatalogue::getTable
+Table::isColumn
+executeGROUPBY
+TableCatalogue::getTable
+Table::groupBy
+External sorting for GROUP BY
+Table::Table
+Table::printRow
+Table::printRow
+Table::getCursor
+Cursor::Cursor
+BufferManager::getPage
+BufferManager::inPool
+BufferManager::insertIntoPool
+Page::Page
+TableCatalogue::getTable
+Cursor::geNext
+Page::getRow
+Copying rows to the temp_groupBy table
+Table::printRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+TableCatalogue::getTable
+Table::getNext
+after copying
+1
+executeLOAD
+Table::Table
+Table::load
+Table::extractColumnNames
+Table::blockify
+BufferManager::writePage
+Page::Page
+Page::writePage
+TableCatalogue::~insertTable
+TableCatalogue::getTable
+Table::getColumnIndex
+Table::getCursor
+Cursor::Cursor
+BufferManager::getPage
+BufferManager::inPool
+BufferManager::insertIntoPool
+Page::Page
+TableCatalogue::getTable
+Cursor::geNext
+Page::getRow
+Cursor::geNext
+Page::getRow
+Cursor::geNext
+Page::getRow
+Cursor::geNext
+Page::getRow
+Cursor::geNext
+Page::getRow
+Cursor::geNext
+Page::getRow
+Cursor::geNext
+Page::getRow
+Cursor::geNext
+Page::getRow
+Cursor::geNext
+Page::getRow
+TableCatalogue::getTable
+Table::getNext
+Inside Sort Comp
+SORT COL INDEX: 2
+Inside Sort Comp
+SORT COL INDEX: 2
+Inside Sort Comp
+SORT COL INDEX: 2
+Inside Sort Comp
+SORT COL INDEX: 2
+Inside Sort Comp
+SORT COL INDEX: 2
+Inside Sort Comp
+SORT COL INDEX: 2
+Inside Sort Comp
+SORT COL INDEX: 2
+Inside Sort Comp
+SORT COL INDEX: 2
+Inside Sort Comp
+SORT COL INDEX: 2
+Inside Sort Comp
+SORT COL INDEX: 2
+Inside Sort Comp
+SORT COL INDEX: 2
+Inside Sort Comp
+SORT COL INDEX: 2
+Inside Sort Comp
+SORT COL INDEX: 2
+Inside Sort Comp
+SORT COL INDEX: 2
+BufferManager::writePage
+Page::Page
+Page::writePage
+Table::makePermanent
+Table::isPermanent
+Table::printRow
+Cursor::Cursor
+BufferManager::getPage
+BufferManager::inPool
+BufferManager::getFromPool
+Cursor::geNext
+Page::getRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+before sorting
+Table::getCursor
+Cursor::Cursor
+BufferManager::getPage
+BufferManager::inPool
+BufferManager::getFromPool
+Cursor::geNext
+Page::getRow
+Copying rows to the temp_groupBy table
+Table::printRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+Table::printRow
+Table::printRow
+Cursor::geNext
+Page::getRow
+TableCatalogue::getTable
+Table::getNext
+ParseQuery::clear
+ParseQuery::clear
+
+Reading New Command: 

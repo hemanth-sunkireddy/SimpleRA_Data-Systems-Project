@@ -290,16 +290,29 @@ void Table::sortTable() {
     sortValues.resize(parsedQuery.sortStrategy.size(), 0);
     columnIndexes.resize(parsedQuery.sortStrategy.size());
 
+    cout << "Resize happening succesfully" << endl;
+
     // Store sorting order
     for (int i = 0; i < parsedQuery.sortStrategy.size(); i++) {
         if (parsedQuery.sortStrategy[i] == DESC)
             sortValues[i] = 1;
     }
 
+    cout << "Storing the sorting order" << endl;
+    cout << "Printing the column count : " << parsedQuery.sortColumns.size() << endl;
+
     // Store column indices to sort by
     for (int i = 0; i < parsedQuery.sortColumns.size(); i++) {
+        cout << "Print the iteration value of I : " << i << "table size : " << this->columns.size() << endl;
+        if (i >= this->columns.size()) {
+            cerr << "Error: Column index out of bounds while accessing columns." << endl;
+            return;
+        }
+        cout << "Columns of the Table : " << this->columns[i] << endl;
         columnIndexes[i] = this->getColumnIndex(parsedQuery.sortColumns[i]);
     }
+
+    cout << "Storing the column indices" << endl;
 
     long long pageDataRows = this->maxRowsPerBlock;
     long long cnt = 0;
@@ -310,7 +323,7 @@ void Table::sortTable() {
     // Read each row and sort them page-wise
     while (true) {
         vector<int> dataRow = cursor.getNext();
-        if (dataRow.empty()) break;
+        if (dataRow.size() == 0) break;
 
         pagesData.push_back(dataRow);
         cnt++;
@@ -326,8 +339,9 @@ void Table::sortTable() {
     }
 
     // Write the remaining data if not empty
-    if (!pagesData.empty()) {
+    if (pagesData.size()>0) {
         sort(pagesData.begin(), pagesData.end(), sortComparator);
+        cout << "writing remaining pages" << endl;
         bufferManager.writePage(this->tableName, pageIndex, pagesData, cnt);
     }
 
@@ -726,4 +740,259 @@ int Table::getColumnIndex(string columnName)
         if (this->columns[columnCounter] == columnName)
             return columnCounter;
     }
+}
+
+void Table::groupBy(){
+    logger.log("Table::groupBy");
+    string newTableName = parsedQuery.groupByResultRelationName;
+    string groupingAttribute = parsedQuery.groupAttribute;
+    string havingaggregateAttribute = parsedQuery.havingAttribute;
+    Aggregate havingaggregateFunction = parsedQuery.havingAgg;
+    BinaryOperator binOp = parsedQuery.groupBinaryOperator;
+    int attributeValue = parsedQuery.havingValue;
+    string aggregateAttribute = parsedQuery.returnAttribute;
+    Aggregate aggregateFunction = parsedQuery.returnAgg;
+    string stringaggregateFunction = parsedQuery.returnAggregate;
+
+    logger.log("External sorting for GROUP BY");
+    parsedQuery.sortStrategy.clear();
+    parsedQuery.sortStrategy.push_back(ASC);
+    parsedQuery.sortColumns.clear();
+    parsedQuery.sortColumns.push_back(parsedQuery.groupAttribute);
+    string tempTableName = "temp_GroupBy";
+    
+    // Create a new table and copy the columns
+    Table *sortedTable = new Table(tempTableName, this->columns);
+    sortedTable->columnCount = this->columnCount;
+    sortedTable->maxRowsPerBlock = this->maxRowsPerBlock;
+
+    Cursor cursor = this->getCursor();
+    vector<int> row = cursor.getNext();
+    logger.log("Copying rows to the temp_groupBy table");
+    while (!row.empty()) {
+        sortedTable->writeRow(row);
+        cout << "Writing : " << row[0] << endl;
+        row = cursor.getNext();
+    }
+
+    Table* newTable = sortedTable;
+
+    cout << "Sorting the table ::: Now :::" << endl;
+    logger.log("after copying");
+    parsedQuery.loadRelationName = "temp/" + tempTableName;
+    logger.log(to_string(parsedQuery.sortColumns.size()));
+    executeLOAD();
+    
+    // Get the table from catalogue and ensure columns are set
+    sortedTable = tableCatalogue.getTable("temp/" + tempTableName);
+    if (!sortedTable) {
+        cerr << "Error: Failed to retrieve sorted table from catalogue" << endl;
+        return;
+    }
+    
+    // // Copy columns and metadata from original table
+    // sortedTable->columns = this->columns;
+    // sortedTable->columnCount = this->columnCount;
+    // sortedTable->maxRowsPerBlock = this->maxRowsPerBlock;
+    
+    sortedTable->sortTable();
+    logger.log("before sorting");
+    cout << "Sorted the table successfully according the attribute" << endl;
+
+    Cursor cursor2 = sortedTable->getCursor();
+    vector<int> row2 = cursor2.getNext();
+    logger.log("Copying rows to the temp_groupBy table");
+    while (!row2.empty()) {
+        newTable->writeRow(row2);
+        cout << "Writing : " << row2[0] << endl;
+        row2 = cursor2.getNext();
+    }
+
+    // vector<string> header = {groupingAttribute, stringaggregateFunction + "(" + aggregateAttribute + ")"};
+    // Table *groupedTable = new Table(newTableName, header);
+    // logger.log("Create a new table for the result");
+    
+    // vector<int> currentGroup;
+    // int currentGroupValue = -1;
+    // logger.log("Initialize variables for grouping");
+    
+    // int havingaggregateResult = 0;
+    // int havingaggregateCount = 0;
+    // int aggregationResult = 0;
+    // int aggregateCount = 0;
+
+    // // Get column indices for groupingAttribute and aggregateAttribute
+    // int groupIndex = sortedTable->getColumnIndex(groupingAttribute);
+    // int havingaggregateIndex = sortedTable->getColumnIndex(havingaggregateAttribute);
+    // int aggregateIndex = sortedTable->getColumnIndex(aggregateAttribute);
+    // logger.log("Get column indices for groupingAttribute and aggregateAttribute");
+    
+    // cursor = sortedTable->getCursor();
+    // row = cursor.getNext();
+    // logger.log("Step 7");
+    // logger.log("Performing GROUP BY and Aggregation");
+    // int currRow = 0;
+    // long long totalRow = 0;
+    // int pageCounter = 0;
+    // vector<vector<int>> pageData;
+    // while (true) {
+    //     if (row.empty()) {
+    //         if (havingaggregateFunction == AVG && havingaggregateCount>0)
+    //             havingaggregateResult /= havingaggregateCount;
+    //         if (currentGroupValue != -1 && havingaggregateCount>0 && ((binOp == EQUAL && attributeValue == havingaggregateResult) ||
+    //                                         (binOp == GREATER_THAN && attributeValue < havingaggregateResult) ||
+    //                                         (binOp == GEQ && attributeValue <= havingaggregateResult) ||
+    //                                         (binOp == LESS_THAN && attributeValue > havingaggregateResult) ||
+    //                                         (binOp == LEQ && attributeValue >= havingaggregateResult))) {
+    //             if (aggregateFunction == MIN || aggregateFunction == MAX || aggregateFunction == SUM) {
+    //                 pageData.push_back({currentGroupValue, aggregationResult});
+    //                 currRow++;
+    //                 totalRow++;
+    //             } else if (aggregateFunction == COUNT) {
+    //                 pageData.push_back({currentGroupValue, aggregateCount});
+    //                 currRow++;
+    //                 totalRow++;
+    //             } else if (aggregateFunction == AVG) {
+    //                 pageData.push_back({currentGroupValue, aggregationResult / aggregateCount});
+    //                 currRow++;
+    //                 totalRow++;
+    //             }
+    //         }
+    //         break;
+    //     }
+    //     int groupValue = row[groupIndex];
+    //     int aggregateValue = row[aggregateIndex];
+    //     int havingaggregateValue = row[havingaggregateIndex];
+
+    //     if (groupValue != currentGroupValue) {
+    //         if (havingaggregateFunction == AVG && havingaggregateCount>0)
+    //             havingaggregateResult /= havingaggregateCount;
+    //         if (currentGroupValue != -1 && havingaggregateCount>0 && ((binOp == EQUAL && attributeValue == havingaggregateResult) ||
+    //                                         (binOp == GREATER_THAN && attributeValue < havingaggregateResult) ||
+    //                                         (binOp == GEQ && attributeValue <= havingaggregateResult) ||
+    //                                         (binOp == LESS_THAN && attributeValue > havingaggregateResult) ||
+    //                                         (binOp == LEQ && attributeValue >= havingaggregateResult))) {
+    //             if (aggregateFunction == MIN || aggregateFunction == MAX || aggregateFunction == SUM) {
+    //                 pageData.push_back({currentGroupValue, aggregationResult});
+    //                 currRow++;
+    //                 totalRow++;
+    //             } else if (aggregateFunction == COUNT) {
+    //                 pageData.push_back({currentGroupValue, aggregateCount});
+    //                 currRow++;
+    //                 totalRow++;
+    //             } else if (aggregateFunction == AVG) {
+    //                 pageData.push_back({currentGroupValue, aggregationResult / aggregateCount});
+    //                 currRow++;
+    //                 totalRow++;
+    //             }
+    //         }
+            
+    //         currentGroupValue = groupValue;
+    //         currentGroup.clear();
+    //         aggregationResult = 0;
+    //         aggregateCount = 0;
+    //         havingaggregateCount = 0;
+    //         havingaggregateResult = 0;
+    //     }
+
+    //     // Perform aggregation based on the aggregateFunction
+    //     if (aggregateFunction == MIN) {
+    //         aggregationResult = min(aggregationResult, aggregateValue);
+    //     } else if (aggregateFunction == MAX) {
+    //         aggregationResult = max(aggregationResult, aggregateValue);
+    //     } else if (aggregateFunction == SUM) {
+    //         aggregationResult += aggregateValue;
+    //     } else if (aggregateFunction == COUNT) {
+    //         aggregateCount++;
+    //     } else if (aggregateFunction == AVG) {
+    //         aggregationResult += aggregateValue;
+    //         aggregateCount++;
+    //     }
+
+    //     if (havingaggregateFunction == MIN) {
+    //         havingaggregateResult = min(aggregationResult, havingaggregateValue);
+    //     } else if (havingaggregateFunction == MAX) {
+    //         havingaggregateResult = max(aggregationResult, havingaggregateValue);
+    //     } else if (havingaggregateFunction == SUM) {
+    //         havingaggregateResult += havingaggregateValue;
+    //     } else if (havingaggregateFunction == COUNT) {
+    //         havingaggregateCount++;
+    //         havingaggregateResult++;
+    //     } else if (havingaggregateFunction == AVG) {
+    //         havingaggregateResult += havingaggregateValue;
+    //         havingaggregateCount++;
+    //     }
+
+    //     // Move to the next row
+    //     if (currRow == groupedTable->maxRowsPerBlock) {
+    //         bufferManager.writePage(groupedTable->tableName, pageCounter, pageData, currRow);
+    //         pageCounter++;
+    //         currRow = 0;
+    //         pageData.clear();
+    //     }
+    //     row = cursor.getNext();
+    // }
+    // if (pageData.size() > 0) {
+    //     bufferManager.writePage(groupedTable->tableName, pageCounter, pageData, currRow);
+    //     pageCounter++;
+    // }
+    // logger.log("pages created");
+    
+    // // Initialize the result table properly
+    // groupedTable->rowCount = totalRow;
+    // groupedTable->columnCount = 2;
+    // groupedTable->blockCount = pageCounter;
+    // groupedTable->sourceFileName = "../data/" + groupedTable->tableName + ".csv";
+    
+    // // Insert the table into the catalog before making it permanent
+    // tableCatalogue.insertTable(groupedTable);
+    
+    // // Write the header to the CSV file
+    // ofstream outputFile(groupedTable->sourceFileName, ios::out);
+    // outputFile << header[0] << ", " << header[1] << endl;
+    // outputFile.close();
+    
+    // // Append the data to the CSV file
+    // outputFile.open(groupedTable->sourceFileName, ios::app);
+    // for (int i = 0; i < pageCounter; i++) {
+    //     ifstream inputFile("../data/temp/" + groupedTable->tableName + "_Page" + to_string(i));
+    //     string line;
+    //     while (getline(inputFile, line)) {
+    //         istringstream iss(line);
+    //         string word;
+    //         bool firstWord = true;
+    //         while (iss >> word) {
+    //             if (!firstWord) {
+    //                 outputFile << ", ";  
+    //             }
+    //             outputFile << word;
+    //             firstWord = false;
+    //         }
+    //         outputFile << endl;
+    //     }
+    //     inputFile.close();
+    // }
+    // outputFile.close();
+    
+    // logger.log("After make permanent");
+    // sortedTable->unload();
+    // sortedTable->deleteTable();
+    // logger.log("Table::GroupBy - End");
+}
+
+void Table::deleteTable() {
+    logger.log("Table::deleteTable - Start");
+
+    // Delete the associated file
+    string filePath = this->sourceFileName;
+    if (remove(filePath.c_str()) == 0) {
+        logger.log("Deleted file: " + filePath);
+    } else {
+        logger.log("Failed to delete file: " + filePath);
+    }
+
+    // Delete the table object itself
+    delete this;
+
+    logger.log("Table::deleteTable - End");
 }

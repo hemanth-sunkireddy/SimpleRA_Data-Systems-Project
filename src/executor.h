@@ -11,6 +11,7 @@ void executeINDEX();
 void executeJOIN();
 void executeLIST();
 void executeLOAD();
+void executeGROUP_BY();
 void executeLOAD_MATRIX();
 void executePRINT();
 void executePRINT_MATRIX();
