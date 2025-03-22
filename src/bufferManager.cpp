@@ -16,11 +16,17 @@ BufferManager::BufferManager()
 Page BufferManager::getPage(string tableName, int pageIndex)
 {
     logger.log("BufferManager::getPage");
+    if (strncmp(tableName.c_str(), "temp/", 5) == 0){
+        tableName = tableName.substr(5);
+    }
+    cout << "Table Name : " << tableName << endl;
     string pageName = "../data/temp/"+tableName + "_Page" + to_string(pageIndex);
     if (this->inPool(pageName)){
+        cout << "Page Name : " << pageName << endl;
         return this->getFromPool(pageName);
     }
     else{
+        cout << "Page Name 2 --- : " << pageName << endl;
         return this->insertIntoPool(tableName, pageIndex);
     }
 }

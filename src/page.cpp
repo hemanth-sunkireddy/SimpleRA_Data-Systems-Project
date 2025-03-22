@@ -30,8 +30,18 @@ Page::Page(string tableName, int pageIndex)
     logger.log("Page::Page");
     this->tableName = tableName;
     this->pageIndex = pageIndex;
+    cout << "Table Name test : " << tableName << endl;
     this->pageName = "../data/temp/" + this->tableName + "_Page" + to_string(pageIndex);
-    Table table = *tableCatalogue.getTable(tableName);
+    Table table;
+    cout << "Table Name test : " << tableName << endl;
+    if (strncmp(tableName.c_str(), "temp_Group", 9) == 0){
+        cout << "Table Name : " << tableName << endl;
+        table = *tableCatalogue.getTable("temp/" + tableName);
+        cout << "Table Name 2 : " << table.tableName << endl;
+    }
+    else{
+        table = *tableCatalogue.getTable(tableName);
+    }
     this->columnCount = table.columnCount;
     uint maxRowCount = table.maxRowsPerBlock;
     vector<int> row(columnCount, 0);

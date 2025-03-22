@@ -21,7 +21,7 @@ TableCatalogue::~insertTable
 ParseQuery::clear
 
 Reading New Command: 
-RSS <- GROUP BY Sex FROM EMPLOYEE HAVING AVG(Salary) > 30000 RETURN AVG(Salary)
+fe <- GROUP BY Sex FROM EMPLOYEE HAVING AVG(Salary) > 30000 RETURN AVG(Salary)
 doCommand
 syntacticParse
 syntacticParseGROUPBY
@@ -54,6 +54,7 @@ BufferManager::getPage
 BufferManager::inPool
 BufferManager::insertIntoPool
 Page::Page
+Table::Table
 TableCatalogue::getTable
 Cursor::geNext
 Page::getRow
@@ -104,13 +105,13 @@ Page::Page
 Page::writePage
 TableCatalogue::~insertTable
 TableCatalogue::getTable
-Table::getColumnIndex
 Table::getCursor
 Cursor::Cursor
 BufferManager::getPage
 BufferManager::inPool
 BufferManager::insertIntoPool
 Page::Page
+Table::Table
 TableCatalogue::getTable
 Cursor::geNext
 Page::getRow
@@ -128,111 +129,6 @@ Cursor::geNext
 Page::getRow
 Cursor::geNext
 Page::getRow
-Cursor::geNext
-Page::getRow
-TableCatalogue::getTable
-Table::getNext
-Inside Sort Comp
-SORT COL INDEX: 2
-Inside Sort Comp
-SORT COL INDEX: 2
-Inside Sort Comp
-SORT COL INDEX: 2
-Inside Sort Comp
-SORT COL INDEX: 2
-Inside Sort Comp
-SORT COL INDEX: 2
-Inside Sort Comp
-SORT COL INDEX: 2
-Inside Sort Comp
-SORT COL INDEX: 2
-Inside Sort Comp
-SORT COL INDEX: 2
-Inside Sort Comp
-SORT COL INDEX: 2
-Inside Sort Comp
-SORT COL INDEX: 2
-Inside Sort Comp
-SORT COL INDEX: 2
-Inside Sort Comp
-SORT COL INDEX: 2
-Inside Sort Comp
-SORT COL INDEX: 2
-Inside Sort Comp
-SORT COL INDEX: 2
-BufferManager::writePage
-Page::Page
-Page::writePage
-Table::makePermanent
-Table::isPermanent
-Table::printRow
-Cursor::Cursor
-BufferManager::getPage
-BufferManager::inPool
-BufferManager::getFromPool
-Cursor::geNext
-Page::getRow
-Table::printRow
-Cursor::geNext
-Page::getRow
-Table::printRow
-Cursor::geNext
-Page::getRow
-Table::printRow
-Cursor::geNext
-Page::getRow
-Table::printRow
-Cursor::geNext
-Page::getRow
-Table::printRow
-Cursor::geNext
-Page::getRow
-Table::printRow
-Cursor::geNext
-Page::getRow
-Table::printRow
-Cursor::geNext
-Page::getRow
-Table::printRow
-before sorting
-Table::getCursor
-Cursor::Cursor
-BufferManager::getPage
-BufferManager::inPool
-BufferManager::getFromPool
-Cursor::geNext
-Page::getRow
-Copying rows to the temp_groupBy table
-Table::printRow
-Table::printRow
-Cursor::geNext
-Page::getRow
-Table::printRow
-Table::printRow
-Cursor::geNext
-Page::getRow
-Table::printRow
-Table::printRow
-Cursor::geNext
-Page::getRow
-Table::printRow
-Table::printRow
-Cursor::geNext
-Page::getRow
-Table::printRow
-Table::printRow
-Cursor::geNext
-Page::getRow
-Table::printRow
-Table::printRow
-Cursor::geNext
-Page::getRow
-Table::printRow
-Table::printRow
-Cursor::geNext
-Page::getRow
-Table::printRow
-Table::printRow
 Cursor::geNext
 Page::getRow
 TableCatalogue::getTable
