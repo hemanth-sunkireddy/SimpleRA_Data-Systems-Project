@@ -95,6 +95,6 @@ void executeSORT(){
     logger.log("executeSORT");
     cout << "SORT FUNCTION IS Executing, will implement soon." << endl;
     Table* table = tableCatalogue.getTable(parsedQuery.sortRelationName);
-    table->sortTable();
+    table->sortTable(true);
     return;
 }

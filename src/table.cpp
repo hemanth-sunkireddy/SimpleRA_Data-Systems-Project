@@ -309,7 +309,7 @@ void Table::updateStatistics(vector<int> row)
         }
     }
 }
-void Table::sortTable() {
+void Table::sortTable(bool makePermanent) {
     logger.log("Table::sortTable");
     
     // Initialize sorting parameters
@@ -343,8 +343,10 @@ void Table::sortTable() {
     // Perform external merge sort
     this->externalSort();
     
-    // Make the sorted table permanent
-    this->makePermanent();
+    // Make the sorted table permanent only if requested
+    if (makePermanent) {
+        this->makePermanent();
+    }
 }
 
 void Table::externalSort() {
@@ -748,7 +750,7 @@ void Table::groupBy() {
     parsedQuery.sortColumns.push_back(groupingAttribute);
     
     cout << "\nSorting table by " << groupingAttribute << "..." << endl;
-    this->sortTable();
+    this->sortTable(false);  // Don't make sorting permanent
     this->unload();
     
     // print the table

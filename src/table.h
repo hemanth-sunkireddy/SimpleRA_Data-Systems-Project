@@ -48,7 +48,7 @@ public:
     bool isPermanent();
     void getNextPage(Cursor *cursor);
     Cursor getCursor();
-    void sortTable();
+    void sortTable(bool makePermanent = true);
     void externalSort();
     int getColumnIndex(string columnName);
     void unload();
