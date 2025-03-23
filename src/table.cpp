@@ -974,3 +974,31 @@ void Table::groupBy() {
     cout << "\n=== GROUP BY Operation Completed ===" << endl;
     logger.log("Table::GroupBy - End");
 }
+
+
+void Table::orderBy() {
+    logger.log("Table::orderBy - Start");
+    cout << "ORDER BY STARTED..." << endl;
+    string newTableName = parsedQuery.orderResultRelation;
+    cout << newTableName << endl;
+    Table *sortedTable = new Table(newTableName, this->columns);  
+    cout << "SORTED TABLE COMPLETED" << endl;
+    Cursor cursor = this->getCursor();
+    vector<int> row = cursor.getNext();
+    while (!row.empty()) {
+        sortedTable->writeRow(row);
+        row = cursor.getNext();
+    }
+    cout << "HERE OK" << endl;
+    parsedQuery.loadRelationName = newTableName;
+    executeLOAD();
+    sortedTable = tableCatalogue.getTable(newTableName);
+
+
+    parsedQuery.sortStrategy.clear();
+    parsedQuery.sortStrategy.push_back(parsedQuery.sortingStrategy);
+    parsedQuery.sortColumns.clear();
+    parsedQuery.sortColumns.push_back(parsedQuery.orderAttribute);
+    sortedTable->sortTable();
+    logger.log("Table :: OrderBy : End");
+}

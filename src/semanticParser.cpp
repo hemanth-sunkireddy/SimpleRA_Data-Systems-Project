@@ -13,6 +13,7 @@ bool semanticParse(){
         case LIST: return semanticParseLIST();
         case LOAD: return semanticParseLOAD();
         case GROUP_BY: return semanticParseGROUP_BY();
+        case ORDERBY: return semanticParseORDERBY();
         case LOAD_MATRIX : return semanticParseLOAD_MATRIX();
         case PRINT: return semanticParsePRINT();
         case PRINT_MATRIX : return semanticParsePRINT_MATRIX();

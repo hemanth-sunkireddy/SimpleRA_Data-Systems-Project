@@ -53,6 +53,7 @@ public:
     int getColumnIndex(string columnName);
     void unload();
     void groupBy();
+    void orderBy();
     void deleteTable();
 
     /**

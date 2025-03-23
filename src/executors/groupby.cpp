@@ -116,9 +116,63 @@ bool semanticParseGROUP_BY()
     return true;
 }
 
+bool syntacticParseORDERBY()
+{
+    logger.log("syntacticParseORDERBY()");
+
+    if(tokenizedQuery.size()!=8){
+        cout<<"SYNATX ERROR: PLEASE GIVE 8 Arguments"<<endl;
+        return false;
+    }
+    parsedQuery.queryType = ORDERBY;
+    parsedQuery.orderResultRelation = tokenizedQuery[0];
+    parsedQuery.orderAttribute = tokenizedQuery[4];
+    string sortingStrategy = tokenizedQuery[5];
+    parsedQuery.orderRelationName = tokenizedQuery[7];
+    if(sortingStrategy == "ASC")
+        parsedQuery.sortingStrategy = ASC;
+    else if(sortingStrategy == "DESC")
+        parsedQuery.sortingStrategy = DESC;
+    else{
+        cout<<"SYNTAX ERROR"<<endl;
+        return false;
+    }
+    cout << "PASSED" << endl;
+    return true;
+}
+
+bool semanticParseORDERBY(){
+    logger.log("semanticParseORDERBY");
+
+    if(tableCatalogue.isTable(parsedQuery.orderResultRelation)){
+        cout<<"SEMANTIC ERROR: Resultant relation already exists"<<endl;
+        return false;
+    }
+
+    if(!tableCatalogue.isTable(parsedQuery.orderRelationName)){
+        cout<<"SEMANTIC ERROR: Relation doesn't exist"<<endl;
+        return false;
+    }
+
+    if(!tableCatalogue.isColumnFromTable(parsedQuery.orderAttribute, parsedQuery.orderRelationName)){
+        cout<<"SEMANTIC ERROR: Column doesn't exist in relation"<<endl;
+        return false;
+    }
+
+    return true;
+}
+
+
 void executeGROUP_BY() {
     logger.log("executeGROUPBY");
     Table* table = tableCatalogue.getTable(parsedQuery.groupRelation);
     table->groupBy();
+    parsedQuery.clear();
+}
+
+void executeORDER_BY() {
+    logger.log("executeGROUPBY");
+    Table* table = tableCatalogue.getTable(parsedQuery.groupRelation);
+    table->orderBy();
     parsedQuery.clear();
 }

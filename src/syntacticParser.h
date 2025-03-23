@@ -16,6 +16,7 @@ enum QueryType
     LOAD_MATRIX,
     PRINT,
     GROUP_BY,
+    ORDERBY,
     PRINT_MATRIX,
     PROJECTION,
     RENAME,
@@ -137,6 +138,12 @@ public:
     string Matrix1 = "";
     string Matrix2 = "";
 
+
+    // ORDER BY
+    string orderResultRelation = "";
+    string orderRelationName = "";
+    string orderAttribute = "";
+
     ParsedQuery();
     void clear();
 };
@@ -163,6 +170,7 @@ bool syntacticParseCROSSTRANSPOSE();
 bool syntacticParseROTATE_MATRIX();
 bool syntacticParseCHECKANTISYM();
 bool syntacticParseGROUP_BY();
+bool syntacticParseORDERBY();
 
 bool isFileExists(string tableName);
 bool isQueryFile(string fileName);
