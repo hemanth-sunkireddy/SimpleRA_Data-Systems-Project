@@ -23,4 +23,3 @@ bool semanticParseROTATE_MATRIX();
 bool semanticParseCROSSTRANSPOSE();
 bool semanticParseCHECKANTISYM();
 bool semanticParseGROUP_BY();
-bool semanticParseORDERBY();

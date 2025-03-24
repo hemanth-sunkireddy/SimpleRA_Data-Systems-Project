@@ -976,29 +976,108 @@ void Table::groupBy() {
 }
 
 
-void Table::orderBy() {
-    logger.log("Table::orderBy - Start");
-    cout << "ORDER BY STARTED..." << endl;
-    string newTableName = parsedQuery.orderResultRelation;
-    cout << newTableName << endl;
-    Table *sortedTable = new Table(newTableName, this->columns);  
-    cout << "SORTED TABLE COMPLETED" << endl;
-    Cursor cursor = this->getCursor();
-    vector<int> row = cursor.getNext();
-    while (!row.empty()) {
-        sortedTable->writeRow(row);
-        row = cursor.getNext();
+//join
+
+void Table::joinTables()
+{
+    logger.log("Table::joinTables - Start");
+
+    // Extract parsed query info
+    string newRelationName = parsedQuery.joinResultRelationName;
+    string tableName1 = parsedQuery.joinFirstRelationName;
+    string tableName2 = parsedQuery.joinSecondRelationName;
+    string column1 = parsedQuery.joinFirstColumnName;
+    string column2 = parsedQuery.joinSecondColumnName;
+
+    // cout << "Performing HASH JOIN" << endl;
+    // cout << "Result Table: " << newRelationName << endl;
+    // cout << "Input Table 1: " << tableName1 << ", Column: " << column1 << endl;
+    // cout << "Input Table 2: " << tableName2 << ", Column: " << column2 << endl;
+
+    // Fetch tables
+    Table* table1 = tableCatalogue.getTable(tableName1);
+    Table* table2 = tableCatalogue.getTable(tableName2);
+
+    if (!table1 || !table2)
+    {
+        cout << "ERROR: One or both input tables not found." << endl;
+        return;
     }
-    cout << "HERE OK" << endl;
-    parsedQuery.loadRelationName = newTableName;
-    executeLOAD();
-    sortedTable = tableCatalogue.getTable(newTableName);
 
+    // Get column indices
+    int colIndex1 = table1->getColumnIndex(column1);
+    int colIndex2 = table2->getColumnIndex(column2);
 
-    parsedQuery.sortStrategy.clear();
-    parsedQuery.sortStrategy.push_back(parsedQuery.sortingStrategy);
-    parsedQuery.sortColumns.clear();
-    parsedQuery.sortColumns.push_back(parsedQuery.orderAttribute);
-    sortedTable->sortTable();
-    logger.log("Table :: OrderBy : End");
+    if (colIndex1 == -1 || colIndex2 == -1)
+    {
+        cout << "ERROR: Join column not found in respective table(s)." << endl;
+        return;
+    }
+
+    // Create result table schema
+    vector<string> resultColumns = table1->columns;
+    resultColumns.insert(resultColumns.end(), table2->columns.begin(), table2->columns.end());
+    Table* resultTable = new Table(newRelationName, resultColumns);
+
+    // Step 1: Build hash table on Table 1
+    unordered_map<int, vector<vector<int>>> hashTable;
+
+    Cursor cursor1 = table1->getCursor();
+    vector<int> row1 = cursor1.getNext();
+    while (!row1.empty())
+    {
+        int key = row1[colIndex1];
+        hashTable[key].push_back(row1);
+        row1 = cursor1.getNext();
+    }
+    // cout << "Hash table built on Table 1 with " << hashTable.size() << " unique keys." << endl;
+
+    // Step 2: Probe hash table using Table 2
+    Cursor cursor2 = table2->getCursor();
+    vector<int> row2 = cursor2.getNext();
+
+    long long int joinedRows = 0;
+    vector<vector<int>> pageBuffer;
+    int currRow = 0, pageCounter = 0;
+
+    while (!row2.empty())
+    {
+        int key = row2[colIndex2];
+
+        if (hashTable.find(key) != hashTable.end())
+        {
+            for (const vector<int>& matchRow : hashTable[key])
+            {
+                vector<int> joinedRow = matchRow;
+                joinedRow.insert(joinedRow.end(), row2.begin(), row2.end());
+                pageBuffer.push_back(joinedRow);
+                currRow++;
+                joinedRows++;
+
+                if (currRow == resultTable->maxRowsPerBlock)
+                {
+                    bufferManager.writePage(resultTable->tableName, pageCounter, pageBuffer, currRow);
+                    pageCounter++;
+                    currRow = 0;
+                    pageBuffer.clear();
+                }
+            }
+        }
+
+        row2 = cursor2.getNext();
+    }
+
+    // Flush remaining rows
+    if (!pageBuffer.empty())
+    {
+        bufferManager.writePage(resultTable->tableName, pageCounter, pageBuffer, currRow);
+        pageCounter++;
+    }
+
+    resultTable->rowCount = joinedRows;
+    resultTable->columnCount = resultColumns.size();
+    tableCatalogue.insertTable(resultTable);
+
+    cout << "Hash join complete. Rows joined: " << joinedRows << endl;
+    logger.log("Table::joinTables - End");
 }

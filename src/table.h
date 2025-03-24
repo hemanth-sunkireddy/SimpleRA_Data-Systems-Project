@@ -53,8 +53,8 @@ public:
     int getColumnIndex(string columnName);
     void unload();
     void groupBy();
-    void orderBy();
     void deleteTable();
+    void joinTables();
 
     /**
      * @brief Static function that takes a vector of valued and prints them out in a

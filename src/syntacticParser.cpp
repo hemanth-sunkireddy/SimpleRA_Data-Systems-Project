@@ -57,8 +57,6 @@ bool syntacticParse()
     }
     else if (tokenizedQuery[2] == "GROUP" && tokenizedQuery[3] == "BY")
         return syntacticParseGROUP_BY();
-    else if (tokenizedQuery[2] == "ORDER" && tokenizedQuery[3] == "BY")
-        return syntacticParseORDERBY();
     else
     {
         string resultantRelationName = possibleQueryType;
