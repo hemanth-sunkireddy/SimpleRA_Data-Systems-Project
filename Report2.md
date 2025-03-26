@@ -144,6 +144,87 @@ If the table name given for the sorted output is already present, it prints a se
 ---
 
 
+# Partition - Hash Join implementation : 
+
+The Hash Join implementation follows a two-phase approach:
+
+### Phase 1: Build Phase
+* Creates a hash table from the first input table (build table)
+* Uses the join column as the hash key
+* Stores complete rows in the hash table buckets
+* Optimized for memory efficiency by storing only necessary data
+
+### Phase 2: Probe Phase
+* Scans the second input table (probe table)
+* For each row in the probe table:
+  * Computes hash value of the join column
+  * Looks up matching rows in the hash table
+  * Creates joined rows by combining matching tuples
+  * Writes results to output in blocks
+
+### Implementation Details:
+
+1. **Initial Setup:**
+```cpp
+// Extract join parameters
+string newRelationName = parsedQuery.joinResultRelationName;
+string tableName1 = parsedQuery.joinFirstRelationName;
+string tableName2 = parsedQuery.joinSecondRelationName;
+string column1 = parsedQuery.joinFirstColumnName;
+string column2 = parsedQuery.joinSecondColumnName;
+```
+
+2. **Hash Table Construction:**
+```cpp
+// Build hash table on Table 1
+unordered_map<int, vector<vector<int>>> hashTable;
+Cursor cursor1 = table1->getCursor();
+vector<int> row1 = cursor1.getNext();
+while (!row1.empty()) {
+    int key = row1[colIndex1];
+    hashTable[key].push_back(row1);
+    row1 = cursor1.getNext();
+}
+```
+
+3. **Probing and Result Generation:**
+```cpp
+// Probe hash table using Table 2
+Cursor cursor2 = table2->getCursor();
+vector<int> row2 = cursor2.getNext();
+while (!row2.empty()) {
+    int key = row2[colIndex2];
+    if (hashTable.find(key) != hashTable.end()) {
+        // Create joined rows for matches
+        for (const vector<int>& matchRow : hashTable[key]) {
+            vector<int> joinedRow = matchRow;
+            joinedRow.insert(joinedRow.end(), row2.begin(), row2.end());
+            // Write to output buffer
+        }
+    }
+    row2 = cursor2.getNext();
+}
+```
+
+### Key Features:
+* Memory-efficient implementation using block-based I/O
+* Handles large datasets through buffered output
+* Maintains data integrity during join operations
+* Supports equi-join conditions
+* Optimized for disk-based operations
+
+### Performance Considerations:
+* Hash table size is limited by available memory
+* Uses unordered_map for O(1) lookups
+* Batches output writes to minimize I/O operations
+* Maintains sorted order of input tables for efficient probing
+
+### Error Handling:
+* Validates input table existence
+* Checks for join column presence
+* Handles memory constraints gracefully
+* Ensures proper cleanup of temporary structures
+
 ## Assumptions
 * for group by, the result should be non empty. else you can view it in the csv file but you cannot load or print that table
 
