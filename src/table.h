@@ -40,6 +40,7 @@ public:
     Table();
     Table(string tableName);
     Table(string tableName, vector<string> columns);
+    Table(string tableName, vector<string> columns, bool ORDER_BY_OPERATION, int block_count);
     bool load();
     bool isColumn(string columnName);
     void renameColumn(string fromColumnName, string toColumnName);
@@ -55,6 +56,7 @@ public:
     void groupBy();
     void deleteTable();
     void joinTables();
+    void orderBy();
 
     /**
      * @brief Static function that takes a vector of valued and prints them out in a
@@ -127,6 +129,7 @@ public:
     void set_element (int row_i, int col_j, int elem);
     void makePermanent();
     bool isPermanent();
+    
     
     void getNextPage(Cursor *cursor);
     Cursor getCursor();

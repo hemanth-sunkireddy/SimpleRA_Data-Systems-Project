@@ -14,33 +14,41 @@ vector<int> sortValues, columnIndexes;
  * file is available and LOAD command has been called. This command should be
  * followed by calling the load function;
  *
- * @param tableName 
+ * @param tableName
  */
 Table::Table(string tableName)
 {
     logger.log("Table::Table");
-    if (strncmp(tableName.c_str(), "temp/", 5) == 0) {
+    if (strncmp(tableName.c_str(), "temp/", 5) == 0)
+    {
         this->sourceFileName = "../data/" + tableName + ".csv";
         this->tableName = tableName.substr(5);
-    } else {
+    }
+    else
+    {
         this->sourceFileName = "../data/" + tableName + ".csv";
         this->tableName = tableName;
     }
 }
-struct MyPair {
+struct MyPair
+{
     vector<int> row;
     int blockNum;
     int boundary;
     int cursorIndex;
-    
-    MyPair(vector<int> r, int b, int bound, int c) 
+
+    MyPair(vector<int> r, int b, int bound, int c)
         : row(r), blockNum(b), boundary(bound), cursorIndex(c) {}
 };
 
-struct CompareByFirstElement {
-    bool operator()(const MyPair &lhs, const MyPair &rhs) const {
-        for (int i = 0; i < columnIndexes.size(); i++) {
-            if (lhs.row[columnIndexes[i]] != rhs.row[columnIndexes[i]]) {
+struct CompareByFirstElement
+{
+    bool operator()(const MyPair &lhs, const MyPair &rhs) const
+    {
+        for (int i = 0; i < columnIndexes.size(); i++)
+        {
+            if (lhs.row[columnIndexes[i]] != rhs.row[columnIndexes[i]])
+            {
                 if (sortValues[i] == 0)
                     return lhs.row[columnIndexes[i]] > rhs.row[columnIndexes[i]];
                 else if (sortValues[i] == 1)
@@ -51,11 +59,14 @@ struct CompareByFirstElement {
     }
 };
 
-static bool sortComparator(const vector<int> &a, const vector<int> &b) {
+static bool sortComparator(const vector<int> &a, const vector<int> &b)
+{
     logger.log("Inside Sort Comp");
-    for (int i = 0; i < columnIndexes.size(); i++) {
+    for (int i = 0; i < columnIndexes.size(); i++)
+    {
         logger.log("SORT COL INDEX: " + to_string(columnIndexes[i]));
-        if (a[columnIndexes[i]] != b[columnIndexes[i]]) {
+        if (a[columnIndexes[i]] != b[columnIndexes[i]])
+        {
             if (sortValues[i] == 0)
                 return a[columnIndexes[i]] < b[columnIndexes[i]];
             else if (sortValues[i] == 1)
@@ -68,8 +79,8 @@ static bool sortComparator(const vector<int> &a, const vector<int> &b) {
 Matrix::Matrix(string matrixname)
 {
     logger.log("Matrix::Matrix");
-    this -> sourceFileName = "../data/" + matrixname + ".csv";
-    this -> matrixname = matrixname;
+    this->sourceFileName = "../data/" + matrixname + ".csv";
+    this->matrixname = matrixname;
 }
 
 /**
@@ -77,8 +88,8 @@ Matrix::Matrix(string matrixname)
  * is encountered. To create the table object both the table name and the
  * columns the table holds should be specified.
  *
- * @param tableName 
- * @param columns 
+ * @param tableName
+ * @param columns
  */
 Table::Table(string tableName, vector<string> columns)
 {
@@ -96,8 +107,8 @@ Table::Table(string tableName, vector<string> columns)
  * reads data from the source file, splits it into blocks and updates table
  * statistics.
  *
- * @return true if the table has been successfully loaded 
- * @return false if an error occurred 
+ * @return true if the table has been successfully loaded
+ * @return false if an error occurred
  */
 bool Table::load()
 {
@@ -115,14 +126,18 @@ bool Table::load()
     return false;
 }
 
-void Table::deleteTable() {
+void Table::deleteTable()
+{
     logger.log("Table::deleteTable - Start");
 
     // Delete the associated file
     string filePath = this->sourceFileName;
-    if (remove(filePath.c_str()) == 0) {
+    if (remove(filePath.c_str()) == 0)
+    {
         logger.log("Deleted file: " + filePath);
-    } else {
+    }
+    else
+    {
         logger.log("Failed to delete file: " + filePath);
     }
 
@@ -135,7 +150,7 @@ void Table::deleteTable() {
 bool Matrix::load()
 {
     logger.log("Matrix::load");
-    fstream fin(this -> sourceFileName, ios::in);
+    fstream fin(this->sourceFileName, ios::in);
     string line;
     if (getline(fin, line))
     {
@@ -150,9 +165,9 @@ bool Matrix::load()
 
 /**
  * @brief Function extracts column names from the header line of the .csv data
- * file. 
+ * file.
  *
- * @param line 
+ * @param line
  * @return true if column names successfully extracted (i.e. no column name
  * repeats)
  * @return false otherwise
@@ -183,19 +198,19 @@ bool Matrix::extractColumnCount(string firstLine)
     string elem;
     stringstream s(firstLine);
     int count = 0;
-    while(getline(s, elem, ','))
+    while (getline(s, elem, ','))
     {
         elem.erase(std::remove_if(elem.begin(), elem.end(), ::isspace), elem.end());
         count += 1;
     }
-    this -> columnCount = count;
+    this->columnCount = count;
     this->maxRowsPerBlock = (uint)((BLOCK_SIZE * 1000) / (sizeof(int) * this->columnCount));
     return true;
 }
 
 /**
  * @brief This function splits all the rows and stores them in multiple files of
- * one block size. 
+ * one block size.
  *
  * @return true if successfully blockified
  * @return false otherwise
@@ -247,7 +262,6 @@ bool Table::blockify()
     return true;
 }
 
-
 bool Matrix::blockify()
 {
     logger.log("Matrix::blockify");
@@ -295,7 +309,7 @@ bool Matrix::blockify()
  * the number of distinct values present in each column. These statistics are to
  * be used during optimisation.
  *
- * @param row 
+ * @param row
  */
 void Table::updateStatistics(vector<int> row)
 {
@@ -309,123 +323,135 @@ void Table::updateStatistics(vector<int> row)
         }
     }
 }
-void Table::sortTable(bool makePermanent) {
+void Table::sortTable(bool makePermanent)
+{
     logger.log("Table::sortTable");
-    
+
     // Initialize sorting parameters
     sortValues.resize(parsedQuery.sortStrategy.size(), 0);
     columnIndexes.resize(parsedQuery.sortStrategy.size());
-    
+
     // Store sorting order
-    for (int i = 0; i < parsedQuery.sortStrategy.size(); i++) {
+    for (int i = 0; i < parsedQuery.sortStrategy.size(); i++)
+    {
         if (parsedQuery.sortStrategy[i] == DESC)
             sortValues[i] = 1;
     }
-    
+
     // Store column indices to sort by
-    for (int i = 0; i < parsedQuery.sortColumns.size(); i++) {
+    for (int i = 0; i < parsedQuery.sortColumns.size(); i++)
+    {
         columnIndexes[i] = this->getColumnIndex(parsedQuery.sortColumns[i]);
     }
-    
+
     // Sort each page individually first
-    for (int pageIndex = 0; pageIndex < this->blockCount; pageIndex++) {
+    for (int pageIndex = 0; pageIndex < this->blockCount; pageIndex++)
+    {
         Page page = bufferManager.getPage(this->tableName, pageIndex);
         vector<vector<int>> pageData = page.getAllRows();
         int rowCount = page.getrowcount();
-        
+
         // Sort the page data
         sort(pageData.begin(), pageData.begin() + rowCount, sortComparator);
-        
+
         // Write back the sorted page
         bufferManager.writePage(this->tableName, pageIndex, pageData, rowCount);
     }
-    
+
     // Perform external merge sort
     this->externalSort();
-    
+
     // Make the sorted table permanent only if requested
-    if (makePermanent) {
+    if (makePermanent)
+    {
         this->makePermanent();
     }
 }
 
-void Table::externalSort() {
+void Table::externalSort()
+{
     logger.log("Table::externalSort");
-    
-    int K = BLOCK_COUNT - 1;  // K-way merge
+
+    int K = BLOCK_COUNT - 1; // K-way merge
     int mergeIterations = ceil(log(this->blockCount) / log(K));
-    
-    for (int iteration = 0; iteration < mergeIterations; iteration++) {
+
+    for (int iteration = 0; iteration < mergeIterations; iteration++)
+    {
         int size = pow(K, iteration);
         int clusters = ceil((double)this->blockCount / size);
-        
-        for (int cluster = 0; cluster < clusters; cluster++) {
+
+        for (int cluster = 0; cluster < clusters; cluster++)
+        {
             int start = cluster * size;
             int end = min(start + size - 1, (int)this->blockCount - 1);
-            
+
             // Create output buffer for merged data
             vector<vector<int>> outputBuffer;
             outputBuffer.reserve(this->maxRowsPerBlock);
-            
+
             // Create priority queue for K-way merge
             priority_queue<MyPair, vector<MyPair>, CompareByFirstElement> pq;
             vector<Cursor> cursors;
-            
+
             // Initialize cursors for each block in the cluster
-            for (int i = start; i <= end; i++) {
+            for (int i = start; i <= end; i++)
+            {
                 Cursor cursor(this->tableName, i);
                 cursors.push_back(cursor);
-                
+
                 // Get first row from each block
                 vector<int> row = cursor.getNext();
-                if (!row.empty()) {
+                if (!row.empty())
+                {
                     pq.push({row, i, end, cursors.size() - 1});
                 }
             }
-            
+
             // Merge blocks
             int outputPageIndex = 0;
-            while (!pq.empty()) {
+            while (!pq.empty())
+            {
                 MyPair top = pq.top();
                 pq.pop();
-                
+
                 outputBuffer.push_back(top.row);
-                
+
                 // If output buffer is full, write it to disk
-                if (outputBuffer.size() == this->maxRowsPerBlock) {
+                if (outputBuffer.size() == this->maxRowsPerBlock)
+                {
                     bufferManager.writePage(this->tableName, outputPageIndex, outputBuffer, outputBuffer.size());
                     outputBuffer.clear();
                     outputPageIndex++;
                 }
-                
+
                 // Get next row from the block that provided the top element
                 vector<int> nextRow = cursors[top.cursorIndex].getNext();
-                if (!nextRow.empty()) {
+                if (!nextRow.empty())
+                {
                     pq.push({nextRow, top.blockNum, top.boundary, top.cursorIndex});
                 }
             }
-            
+
             // Write remaining rows in output buffer
-            if (!outputBuffer.empty()) {
+            if (!outputBuffer.empty())
+            {
                 bufferManager.writePage(this->tableName, outputPageIndex, outputBuffer, outputBuffer.size());
             }
         }
     }
 }
 
-
-
 void Matrix::updateStatistics(vector<int> row)
 {
-    this -> rowCount++;
+    this->rowCount++;
 }
 
 /**
  * @brief Checks if the given column is present in this table.
  *
- * @param columnName 
- * @return true 
- * @return false 
+ * @param columnName
+ * @return true
+ * @return false
  */
 bool Table::isColumn(string columnName)
 {
@@ -445,8 +471,8 @@ bool Table::isColumn(string columnName)
  * assumed that checks such as the existence of fromColumnName and the non prior
  * existence of toColumnName are done.
  *
- * @param fromColumnName 
- * @param toColumnName 
+ * @param fromColumnName
+ * @param toColumnName
  */
 void Table::renameColumn(string fromColumnName, string toColumnName)
 {
@@ -473,7 +499,7 @@ void Table::print()
     logger.log("Table::print");
     uint count = min((long long)PRINT_COUNT, this->rowCount);
 
-    //print headings
+    // print headings
     this->writeRow(this->columns, cout);
 
     Cursor cursor(this->tableName, 0);
@@ -488,36 +514,40 @@ void Table::print()
 void Matrix::print()
 {
     logger.log("Matrix :: Print");
-    uint count = min((long long)PRINT_COUNT, this -> rowCount);
+    uint count = min((long long)PRINT_COUNT, this->rowCount);
 
     Cursor cursor(this->matrixname, 0, 1);
     vector<int> row;
     for (int rowCounter = 0; rowCounter < count; rowCounter++)
     {
         row = cursor.getNext();
-        this -> writeRow(row, cout);
+        this->writeRow(row, cout);
     }
-    printRowCount(this -> rowCount);
+    printRowCount(this->rowCount);
 }
 
-void Matrix::rotate() {
+void Matrix::rotate()
+{
     // cout << "GET ELEM : " << this->get_element(2,2) << endl;
     // this->set_element(2,2,69);
     // cout << "GET ELEM after set : " << this->get_element(2,2) << endl;
-    if (this->rowCount != this->columnCount) {
+    if (this->rowCount != this->columnCount)
+    {
         // In-place rotation is not supported for non-square matrices
         std::cerr << "In-place rotation is only supported for square matrices." << std::endl;
         return;
     }
 
-    int N = this->rowCount;  // Since it's a square matrix, rowCount == columnCount
+    int N = this->rowCount; // Since it's a square matrix, rowCount == columnCount
 
     // Rotate the matrix layer by layer
-    for (int layer = 0; layer < N / 2; ++layer) {
+    for (int layer = 0; layer < N / 2; ++layer)
+    {
         int first = layer;
         int last = N - 1 - layer;
-        
-        for (int i = first; i < last; ++i) {
+
+        for (int i = first; i < last; ++i)
+        {
             int offset = i - first;
 
             // Save the top element
@@ -541,9 +571,9 @@ void Matrix::rotate() {
 int Matrix::get_element(int i, int j)
 {
     logger.log("Matrix :: get_element");
-    uint count = min((long long) PRINT_COUNT, this -> rowCount);
+    uint count = min((long long)PRINT_COUNT, this->rowCount);
 
-    Cursor cursor(this -> matrixname, 0, 1);
+    Cursor cursor(this->matrixname, 0, 1);
     vector<int> row;
     for (int rowCounter = 0; rowCounter < count && rowCounter < i; rowCounter++)
     {
@@ -555,9 +585,11 @@ int Matrix::get_element(int i, int j)
     return row[j];
 }
 
-void Matrix::set_element(int row, int col, int value) {
+void Matrix::set_element(int row, int col, int value)
+{
     // Ensure row and col are within bounds
-    if (row >= this->rowCount || col >= this->columnCount || row < 0 || col < 0) {
+    if (row >= this->rowCount || col >= this->columnCount || row < 0 || col < 0)
+    {
         cout << "Error: Attempting to access out-of-bounds element." << endl;
         return;
     }
@@ -583,23 +615,21 @@ void Matrix::set_element(int row, int col, int value) {
     bufferManager.deletePage(pageName);
 }
 
-
-
 /**
  * @brief This function returns one row of the table using the cursor object. It
  * returns an empty row is all rows have been read.
  *
- * @param cursor 
- * @return vector<int> 
+ * @param cursor
+ * @return vector<int>
  */
 void Table::getNextPage(Cursor *cursor)
 {
     logger.log("Table::getNext");
 
-        if (cursor->pageIndex < this->blockCount - 1)
-        {
-            cursor->nextPage(cursor->pageIndex+1);
-        }
+    if (cursor->pageIndex < this->blockCount - 1)
+    {
+        cursor->nextPage(cursor->pageIndex + 1);
+    }
 }
 
 void Matrix::getNextPage(Cursor *cursor)
@@ -609,8 +639,6 @@ void Matrix::getNextPage(Cursor *cursor)
         cursor->nextPage(cursor->pageIndex + 1);
 }
 
-
-
 /**
  * @brief called when EXPORT command is invoked to move source file to "data"
  * folder.
@@ -619,12 +647,12 @@ void Matrix::getNextPage(Cursor *cursor)
 void Table::makePermanent()
 {
     logger.log("Table::makePermanent");
-    if(!this->isPermanent())
+    if (!this->isPermanent())
         bufferManager.deleteFile(this->sourceFileName);
     string newSourceFile = "../data/" + this->tableName + ".csv";
     ofstream fout(newSourceFile, ios::out);
 
-    //print headings
+    // print headings
     this->writeRow(this->columns, fout);
 
     Cursor cursor(this->tableName, 0);
@@ -640,7 +668,7 @@ void Table::makePermanent()
 void Matrix::makePermanent()
 {
     logger.log("Table::makePermanent");
-    if(!this->isPermanent())
+    if (!this->isPermanent())
         bufferManager.deleteFile(this->sourceFileName);
     string newSourceFile = "../data/" + this->matrixname + ".csv";
     ofstream fout(newSourceFile, ios::out);
@@ -672,7 +700,7 @@ bool Table::isPermanent()
 bool Matrix::isPermanent()
 {
     logger.log("Matrix :: isPermanent");
-    if (this -> sourceFileName == "../data/" + this -> matrixname + ".csv")
+    if (this->sourceFileName == "../data/" + this->matrixname + ".csv")
         return true;
     return false;
 }
@@ -682,7 +710,8 @@ bool Matrix::isPermanent()
  * all temporary files created as part of this table
  *
  */
-void Table::unload(){
+void Table::unload()
+{
     logger.log("Table::~unload");
     for (int pageCounter = 0; pageCounter < this->blockCount; pageCounter++)
         bufferManager.deleteFile(this->tableName, pageCounter);
@@ -690,7 +719,8 @@ void Table::unload(){
         bufferManager.deleteFile(this->sourceFileName);
 }
 
-void Matrix::unload(){
+void Matrix::unload()
+{
     logger.log("Table::~unload");
     for (int pageCounter = 0; pageCounter < this->blockCount; pageCounter++)
         bufferManager.deleteFile(this->matrixname, pageCounter);
@@ -700,8 +730,8 @@ void Matrix::unload(){
 
 /**
  * @brief Function that returns a cursor that reads rows from this table
- * 
- * @return Cursor 
+ *
+ * @return Cursor
  */
 Cursor Table::getCursor()
 {
@@ -711,9 +741,9 @@ Cursor Table::getCursor()
 }
 /**
  * @brief Function that returns the index of column indicated by columnName
- * 
- * @param columnName 
- * @return int 
+ *
+ * @param columnName
+ * @return int
  */
 int Table::getColumnIndex(string columnName)
 {
@@ -725,7 +755,8 @@ int Table::getColumnIndex(string columnName)
     }
 }
 
-void Table::groupBy() {
+void Table::groupBy()
+{
     logger.log("Table::groupBy");
     string newTableName = parsedQuery.groupByResultRelationName;
     string groupingAttribute = parsedQuery.groupAttribute;
@@ -748,19 +779,19 @@ void Table::groupBy() {
     parsedQuery.sortStrategy.push_back(ASC);
     parsedQuery.sortColumns.clear();
     parsedQuery.sortColumns.push_back(groupingAttribute);
-    
+
     cout << "\nSorting table by " << groupingAttribute << "..." << endl;
-    this->sortTable(false);  // Don't make sorting permanent
+    this->sortTable(false); // Don't make sorting permanent
     this->unload();
-    
+
     // print the table
     this->print();
-    
+
     // Create the result table with appropriate columns
     vector<string> header = {groupingAttribute, stringaggregateFunction + "(" + aggregateAttribute + ")"};
     Table *groupedTable = new Table(newTableName, header);
     logger.log("Created new table for result");
-    
+
     // Initialize variables for grouping
     int currentGroupValue = -1;
     int havingaggregateResult = 0;
@@ -773,108 +804,145 @@ void Table::groupBy() {
     int groupIndex = this->getColumnIndex(groupingAttribute);
     int havingaggregateIndex = this->getColumnIndex(havingaggregateAttribute);
     int aggregateIndex = this->getColumnIndex(aggregateAttribute);
-    
+
     cout << "\nColumn indices:" << endl;
     cout << "Group index: " << groupIndex << endl;
     cout << "Aggregate index: " << aggregateIndex << endl;
     cout << "Having aggregate index: " << havingaggregateIndex << endl;
-    
+
     // Process the sorted data
     Cursor cursor = this->getCursor();
     vector<int> row = cursor.getNext();
     logger.log("Starting GROUP BY processing");
-    
+
     int currRow = 0;
     long long totalRow = 0;
     int pageCounter = 0;
     vector<vector<int>> pageData;
 
     cout << "\nProcessing rows..." << endl;
-    while (!row.empty()) {
+    while (!row.empty())
+    {
         int groupValue = row[groupIndex];
         int aggregateValue = row[aggregateIndex];
         int havingaggregateValue = row[havingaggregateIndex];
 
-        if (groupValue != currentGroupValue) {
+        if (groupValue != currentGroupValue)
+        {
             // Process the previous group
-            if (!isFirstGroup) {
-                if (havingaggregateFunction == AVG && havingaggregateCount > 0) {
+            if (!isFirstGroup)
+            {
+                if (havingaggregateFunction == AVG && havingaggregateCount > 0)
+                {
                     havingaggregateResult = havingaggregateResult / havingaggregateCount;
                 }
-                
+
                 cout << "\nProcessing group with value: " << currentGroupValue << endl;
                 cout << "Having aggregate result: " << havingaggregateResult << endl;
                 cout << "Having aggregate count: " << havingaggregateCount << endl;
-                
+
                 bool havingConditionMet = false;
-                if (havingaggregateCount > 0) {
-                    if (binOp == EQUAL) {
+                if (havingaggregateCount > 0)
+                {
+                    if (binOp == EQUAL)
+                    {
                         havingConditionMet = (havingaggregateResult == attributeValue);
-                    } else if (binOp == GREATER_THAN) {
+                    }
+                    else if (binOp == GREATER_THAN)
+                    {
                         havingConditionMet = (havingaggregateResult > attributeValue);
-                    } else if (binOp == GEQ) {
+                    }
+                    else if (binOp == GEQ)
+                    {
                         havingConditionMet = (havingaggregateResult >= attributeValue);
                     }
                 }
 
-                if (havingConditionMet) {
+                if (havingConditionMet)
+                {
                     cout << "Having condition met for group " << currentGroupValue << endl;
                     vector<int> resultRow;
-                    
-                    if (aggregateFunction == MIN || aggregateFunction == MAX || aggregateFunction == SUM) {
+
+                    if (aggregateFunction == MIN || aggregateFunction == MAX || aggregateFunction == SUM)
+                    {
                         resultRow = {currentGroupValue, aggregationResult};
-                    } else if (aggregateFunction == COUNT) {
+                    }
+                    else if (aggregateFunction == COUNT)
+                    {
                         resultRow = {currentGroupValue, aggregateCount};
-                    } else if (aggregateFunction == AVG && aggregateCount > 0) {
+                    }
+                    else if (aggregateFunction == AVG && aggregateCount > 0)
+                    {
                         resultRow = {currentGroupValue, aggregationResult / aggregateCount};
                     }
-                    
+
                     cout << "Adding result row: [" << resultRow[0] << ", " << resultRow[1] << "]" << endl;
                     pageData.push_back(resultRow);
                     currRow++;
                     totalRow++;
                 }
             }
-            
+
             // Start new group
             currentGroupValue = groupValue;
-            aggregationResult = aggregateValue;  // Initialize with first value
+            aggregationResult = aggregateValue; // Initialize with first value
             aggregateCount = 1;
             havingaggregateCount = 1;
             havingaggregateResult = havingaggregateValue;
             isFirstGroup = false;
-        } else {
+        }
+        else
+        {
             // Update aggregation results for current group
-            if (aggregateFunction == MIN) {
+            if (aggregateFunction == MIN)
+            {
                 aggregationResult = min(aggregationResult, aggregateValue);
-            } else if (aggregateFunction == MAX) {
+            }
+            else if (aggregateFunction == MAX)
+            {
                 aggregationResult = max(aggregationResult, aggregateValue);
-            } else if (aggregateFunction == SUM) {
+            }
+            else if (aggregateFunction == SUM)
+            {
                 aggregationResult += aggregateValue;
-            } else if (aggregateFunction == COUNT) {
+            }
+            else if (aggregateFunction == COUNT)
+            {
                 aggregateCount++;
-            } else if (aggregateFunction == AVG) {
+            }
+            else if (aggregateFunction == AVG)
+            {
                 aggregationResult += aggregateValue;
                 aggregateCount++;
             }
 
             // Update having clause results
-            if (havingaggregateFunction == MIN) {
+            if (havingaggregateFunction == MIN)
+            {
                 havingaggregateResult = min(havingaggregateResult, havingaggregateValue);
-            } else if (havingaggregateFunction == MAX) {
+            }
+            else if (havingaggregateFunction == MAX)
+            {
                 havingaggregateResult = max(havingaggregateResult, havingaggregateValue);
-            } else if (havingaggregateFunction == SUM) {
+            }
+            else if (havingaggregateFunction == SUM)
+            {
                 havingaggregateResult += havingaggregateValue;
-            } else if (havingaggregateFunction == COUNT) {
+            }
+            else if (havingaggregateFunction == COUNT)
+            {
                 havingaggregateCount++;
-            } else if (havingaggregateFunction == AVG) {
+            }
+            else if (havingaggregateFunction == AVG)
+            {
                 havingaggregateResult += havingaggregateValue;
                 havingaggregateCount++;
             }
         }
 
         // Write page if full
-        if (currRow == groupedTable->maxRowsPerBlock) {
+        if (currRow == groupedTable->maxRowsPerBlock)
+        {
             cout << "Writing page " << pageCounter << " with " << currRow << " rows" << endl;
             bufferManager.writePage(groupedTable->tableName, pageCounter, pageData, currRow);
             pageCounter++;
@@ -886,38 +954,52 @@ void Table::groupBy() {
     }
 
     // Process the last group
-    if (!isFirstGroup) {
-        if (havingaggregateFunction == AVG && havingaggregateCount > 0) {
+    if (!isFirstGroup)
+    {
+        if (havingaggregateFunction == AVG && havingaggregateCount > 0)
+        {
             havingaggregateResult = havingaggregateResult / havingaggregateCount;
         }
-        
+
         cout << "\nProcessing final group with value: " << currentGroupValue << endl;
         cout << "Having aggregate result: " << havingaggregateResult << endl;
         cout << "Having aggregate count: " << havingaggregateCount << endl;
-        
+
         bool havingConditionMet = false;
-        if (havingaggregateCount > 0) {
-            if (binOp == EQUAL) {
+        if (havingaggregateCount > 0)
+        {
+            if (binOp == EQUAL)
+            {
                 havingConditionMet = (havingaggregateResult == attributeValue);
-            } else if (binOp == GREATER_THAN) {
+            }
+            else if (binOp == GREATER_THAN)
+            {
                 havingConditionMet = (havingaggregateResult > attributeValue);
-            } else if (binOp == GEQ) {
+            }
+            else if (binOp == GEQ)
+            {
                 havingConditionMet = (havingaggregateResult >= attributeValue);
             }
         }
 
-        if (havingConditionMet) {
+        if (havingConditionMet)
+        {
             cout << "Having condition met for final group " << currentGroupValue << endl;
             vector<int> resultRow;
-            
-            if (aggregateFunction == MIN || aggregateFunction == MAX || aggregateFunction == SUM) {
+
+            if (aggregateFunction == MIN || aggregateFunction == MAX || aggregateFunction == SUM)
+            {
                 resultRow = {currentGroupValue, aggregationResult};
-            } else if (aggregateFunction == COUNT) {
+            }
+            else if (aggregateFunction == COUNT)
+            {
                 resultRow = {currentGroupValue, aggregateCount};
-            } else if (aggregateFunction == AVG && aggregateCount > 0) {
+            }
+            else if (aggregateFunction == AVG && aggregateCount > 0)
+            {
                 resultRow = {currentGroupValue, aggregationResult / aggregateCount};
             }
-            
+
             cout << "Adding final result row: [" << resultRow[0] << ", " << resultRow[1] << "]" << endl;
             pageData.push_back(resultRow);
             currRow++;
@@ -926,41 +1008,46 @@ void Table::groupBy() {
     }
 
     // Write remaining data
-    if (!pageData.empty()) {
+    if (!pageData.empty())
+    {
         cout << "Writing final page " << pageCounter << " with " << currRow << " rows" << endl;
         bufferManager.writePage(groupedTable->tableName, pageCounter, pageData, currRow);
         pageCounter++;
     }
-    
+
     cout << "\nTotal rows in result: " << totalRow << endl;
     cout << "Total pages: " << pageCounter << endl;
-    
+
     // Initialize the result table properly
     groupedTable->rowCount = totalRow;
     groupedTable->columnCount = 2;
     groupedTable->blockCount = pageCounter;
     groupedTable->sourceFileName = "../data/" + groupedTable->tableName + ".csv";
-    
+
     // Insert the table into the catalog
     tableCatalogue.insertTable(groupedTable);
-    
+
     // Write the header to the CSV file
     ofstream outputFile(groupedTable->sourceFileName, ios::out);
     outputFile << header[0] << "," << header[1] << endl;
     outputFile.close();
-    
+
     // Append the data to the CSV file
     outputFile.open(groupedTable->sourceFileName, ios::app);
-    for (int i = 0; i < pageCounter; i++) {
+    for (int i = 0; i < pageCounter; i++)
+    {
         ifstream inputFile("../data/temp/" + groupedTable->tableName + "_Page" + to_string(i));
         string line;
-        while (getline(inputFile, line)) {
+        while (getline(inputFile, line))
+        {
             istringstream iss(line);
             string word;
             bool firstWord = true;
-            while (iss >> word) {
-                if (!firstWord) {
-                    outputFile << ",";  
+            while (iss >> word)
+            {
+                if (!firstWord)
+                {
+                    outputFile << ",";
                 }
                 outputFile << word;
                 firstWord = false;
@@ -970,13 +1057,12 @@ void Table::groupBy() {
         inputFile.close();
     }
     outputFile.close();
-    
+
     cout << "\n=== GROUP BY Operation Completed ===" << endl;
     logger.log("Table::GroupBy - End");
 }
 
-
-//join
+// join
 
 void Table::joinTables()
 {
@@ -995,8 +1081,8 @@ void Table::joinTables()
     // cout << "Input Table 2: " << tableName2 << ", Column: " << column2 << endl;
 
     // Fetch tables
-    Table* table1 = tableCatalogue.getTable(tableName1);
-    Table* table2 = tableCatalogue.getTable(tableName2);
+    Table *table1 = tableCatalogue.getTable(tableName1);
+    Table *table2 = tableCatalogue.getTable(tableName2);
 
     if (!table1 || !table2)
     {
@@ -1017,7 +1103,7 @@ void Table::joinTables()
     // Create result table schema
     vector<string> resultColumns = table1->columns;
     resultColumns.insert(resultColumns.end(), table2->columns.begin(), table2->columns.end());
-    Table* resultTable = new Table(newRelationName, resultColumns);
+    Table *resultTable = new Table(newRelationName, resultColumns);
 
     // Step 1: Build hash table on Table 1
     unordered_map<int, vector<vector<int>>> hashTable;
@@ -1046,7 +1132,7 @@ void Table::joinTables()
 
         if (hashTable.find(key) != hashTable.end())
         {
-            for (const vector<int>& matchRow : hashTable[key])
+            for (const vector<int> &matchRow : hashTable[key])
             {
                 vector<int> joinedRow = matchRow;
                 joinedRow.insert(joinedRow.end(), row2.begin(), row2.end());
@@ -1080,4 +1166,101 @@ void Table::joinTables()
 
     cout << "Hash join complete. Rows joined: " << joinedRows << endl;
     logger.log("Table::joinTables - End");
+}
+
+Table::Table(string tableName, vector<string> columns, bool ORDER_BY_OPERATION, int block_count)
+{
+    logger.log("Table::Table");
+
+    this->tableName = tableName;
+    this->columns = columns;
+    this->columnCount = columns.size();
+    this->blockCount = block_count;
+    this->maxRowsPerBlock = (uint)((BLOCK_SIZE * 1000) / (sizeof(int) * columnCount));
+    this->writeRow<string>(columns);
+}
+
+void Table::orderBy()
+{
+    logger.log("Table::orderBy - Start");
+    cout << "ORDER BY STARTED..." << endl;
+
+    string newTableName = parsedQuery.orderResultRelation;
+    string oldTableName = parsedQuery.orderRelationName;
+    string orderColumn = parsedQuery.orderAttribute;
+    bool isDescending = (parsedQuery.sortingStrategy == SortingStrategy::DESC);
+
+    // Retrieve the Table object using oldTableName
+    Table *oldTable = tableCatalogue.getTable(oldTableName);
+    if (!oldTable)
+    {
+        cout << "Error: Table not found - " << oldTableName << endl;
+        return;
+    }
+
+    Table *sortedTable = nullptr;
+    try
+    {
+        sortedTable = new Table(newTableName, oldTable->columns, true, oldTable->columnCount);
+        sortedTable->blockCount = oldTable->blockCount;
+    }
+    catch (exception &e)
+    {
+        cout << "Exception: " << e.what() << endl;
+        return;
+    }
+    catch (...)
+    {
+        cout << "Unknown exception occurred" << endl;
+        return;
+    }
+
+    vector<vector<int>> allRows;
+    Cursor cursor = oldTable->getCursor();
+    vector<int> row = cursor.getNext();
+    while (!row.empty())
+    {
+        allRows.push_back(row);
+        row = cursor.getNext();
+    }
+
+    // Get column index to sort by
+    int columnIndex = oldTable->getColumnIndex(orderColumn);
+
+    // Sort rows using the specified column and order
+    sort(allRows.begin(), allRows.end(), [&](const vector<int> &a, const vector<int> &b)
+         { return isDescending ? a[columnIndex] > b[columnIndex] : a[columnIndex] < b[columnIndex]; });
+
+    // Write sorted data into the new table
+    for (const auto &sortedRow : allRows)
+    {
+        sortedTable->writeRow(sortedRow);
+    }
+
+    parsedQuery.loadRelationName = newTableName;
+    tableCatalogue.insertTable(sortedTable);
+
+    ofstream csvFile("../data/" + newTableName + ".csv");
+    for (size_t i = 0; i < oldTable->columns.size(); i++)
+    {
+        csvFile << oldTable->columns[i];
+        if (i < oldTable->columns.size() - 1)
+            csvFile << ",";
+    }
+    csvFile << "\n";
+    for (const auto &sortedRow : allRows)
+    {
+        sortedTable->writeRow(sortedRow);
+        for (size_t i = 0; i < sortedRow.size(); i++)
+        {
+            csvFile << sortedRow[i];
+            if (i < sortedRow.size() - 1)
+                csvFile << ",";
+        }
+        csvFile << "\n";
+    }
+    csvFile.close();
+    // sortedTable->makePermanent();
+    cout << "ORDER BY COMPLETED" << endl;
+    logger.log("Table::orderBy - End");
 }
