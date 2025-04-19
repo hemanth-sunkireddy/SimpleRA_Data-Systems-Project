@@ -1,4 +1,5 @@
 #include "cursor.h"
+#include "enums.h"
 
 enum IndexingStrategy
 {
@@ -57,6 +58,11 @@ public:
     void deleteTable();
     void joinTables();
     void orderBy();
+    
+    // Index related functions
+    bool buildIndex(string columnName);
+    vector<int> searchIndexed(string columnName, int value, BinaryOperator op);
+    bool isIndexed(string columnName);
 
     /**
      * @brief Static function that takes a vector of valued and prints them out in a

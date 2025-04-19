@@ -72,6 +72,8 @@ bool syntacticParse()
             return syntacticParsePROJECTION();
         else if (possibleQueryType == "SELECT")
             return syntacticParseSELECTION();
+        else if (possibleQueryType == "SEARCH")
+            return syntacticParseSEARCH();
         else if (possibleQueryType == "JOIN")
             return syntacticParseJOIN();
         else if (possibleQueryType == "CROSS")

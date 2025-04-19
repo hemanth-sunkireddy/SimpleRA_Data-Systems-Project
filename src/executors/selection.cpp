@@ -8,7 +8,7 @@ bool syntacticParseSELECTION()
     logger.log("syntacticParseSELECTION");
     if (tokenizedQuery.size() != 8 || tokenizedQuery[6] != "FROM")
     {
-        cout << "SYNTAC ERROR" << endl;
+        cout << "SYNTAX ERROR: Expected format: R <- SELECT column_name bin_op value FROM relation_name" << endl;
         return false;
     }
     parsedQuery.queryType = SELECTION;
@@ -31,7 +31,7 @@ bool syntacticParseSELECTION()
         parsedQuery.selectionBinaryOperator = NOT_EQUAL;
     else
     {
-        cout << "SYNTAC ERROR" << endl;
+        cout << "SYNTAX ERROR: Invalid binary operator" << endl;
         return false;
     }
     regex numeric("[-]?[0-9]+");
@@ -82,26 +82,7 @@ bool semanticParseSELECTION()
     return true;
 }
 
-bool evaluateBinOp(int value1, int value2, BinaryOperator binaryOperator)
-{
-    switch (binaryOperator)
-    {
-    case LESS_THAN:
-        return (value1 < value2);
-    case GREATER_THAN:
-        return (value1 > value2);
-    case LEQ:
-        return (value1 <= value2);
-    case GEQ:
-        return (value1 >= value2);
-    case EQUAL:
-        return (value1 == value2);
-    case NOT_EQUAL:
-        return (value1 != value2);
-    default:
-        return false;
-    }
-}
+// evaluateBinOp is now defined in global.h
 
 void executeSELECTION()
 {

@@ -1,4 +1,5 @@
 #include "tableCatalogue.h"
+#include "enums.h"
 
 using namespace std;
 
@@ -26,19 +27,11 @@ enum QueryType
     CROSSTRANSPOSE,
     ROTATE_MATRIX,
     CHECKANTISYM,
+    SEARCH,
     UNDETERMINED
 };
 
-enum BinaryOperator
-{
-    LESS_THAN,
-    GREATER_THAN,
-    LEQ,
-    GEQ,
-    EQUAL,
-    NOT_EQUAL,
-    NO_BINOP_CLAUSE
-};
+// BinaryOperator enum is now in enums.h
 
 enum SortingStrategy
 {
@@ -126,6 +119,13 @@ public:
     string selectionSecondColumnName = "";
     int selectionIntLiteral = 0;
 
+    // SEARCH COMMAND
+    string searchResultRelationName = "";
+    string searchRelationName = "";
+    string searchColumnName = "";
+    BinaryOperator searchBinaryOperator = NO_BINOP_CLAUSE;
+    int searchIntLiteral = 0;
+
     SortingStrategy sortingStrategy = NO_SORT_CLAUSE;
     string sortResultRelationName = "";
     string sortColumnName = "";
@@ -169,6 +169,7 @@ bool syntacticParseROTATE_MATRIX();
 bool syntacticParseCHECKANTISYM();
 bool syntacticParseGROUP_BY();
 bool syntacticParseORDERBY();
+bool syntacticParseSEARCH();
 
 bool isFileExists(string tableName);
 bool isQueryFile(string fileName);

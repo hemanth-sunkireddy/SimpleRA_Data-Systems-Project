@@ -1,12 +1,261 @@
 #include "global.h"
 
 /**
+ * @brief Build an index on the specified column
+ * 
+ * @param columnName the name of the column to index
+ * @return true if index is built successfully
+ * @return false otherwise
+ */
+bool Table::buildIndex(string columnName) {
+    logger.log("Table::buildIndex");
+    cout << "DEBUG: Building index on " << this->tableName << "." << columnName << endl;
+    
+    if (!this->isColumn(columnName)) {
+        cout << "Error: Column " << columnName << " does not exist in table " << this->tableName << endl;
+        return false;
+    }
+    
+    if (this->indexed && this->indexedColumn == columnName) {
+        cout << "Table " << this->tableName << " is already indexed on column " << columnName << endl;
+        return true;
+    }
+    
+    cout << "DEBUG: Getting column index for " << columnName << endl;
+    int columnIndex = this->getColumnIndex(columnName);
+    cout << "DEBUG: Column index is " << columnIndex << endl;
+    
+    string indexTableName = this->tableName + "_" + columnName + "_index";
+    cout << "DEBUG: Index table name will be " << indexTableName << endl;
+    
+    // Instead of creating a Table object, let's manually collect all the index data first
+    vector<pair<int, int>> indexData;
+    
+    // Create a cursor to iterate through the table
+    cout << "DEBUG: Creating cursor to iterate through the table" << endl;
+    Cursor cursor = this->getCursor();
+    cout << "DEBUG: Getting first row" << endl;
+    vector<int> row = cursor.getNext();
+    int rowCounter = 0;
+    
+    // For each row, extract the value of the indexed column and store it with the row number
+    cout << "DEBUG: Starting to process rows" << endl;
+    while (!row.empty()) {
+        cout << "DEBUG: Processing row " << rowCounter << endl;
+        
+        if (columnIndex >= row.size()) {
+            cout << "ERROR: Column index " << columnIndex << " is out of bounds for row with size " << row.size() << endl;
+            return false;
+        }
+        
+        int value = row[columnIndex];
+        cout << "DEBUG: Value at column " << columnIndex << " is " << value << endl;
+        
+        // Store the value and row number in our collection
+        indexData.push_back(make_pair(value, rowCounter));
+        cout << "DEBUG: Added index entry: value=" << value << ", rowNumber=" << rowCounter << endl;
+        
+        cout << "DEBUG: Getting next row" << endl;
+        row = cursor.getNext();
+        rowCounter++;
+    }
+    
+    cout << "DEBUG: Processed " << rowCounter << " rows" << endl;
+    
+    // Sort the index data by value for efficient binary search
+    sort(indexData.begin(), indexData.end());
+    cout << "DEBUG: Sorted index data" << endl;
+    
+    // Ensure the temp directory exists
+    string tempDir = "../data/temp";
+    struct stat info;
+    if (stat(tempDir.c_str(), &info) != 0 || !(info.st_mode & S_IFDIR)) {
+        cout << "DEBUG: Creating temp directory: " << tempDir << endl;
+        system(("mkdir -p " + tempDir).c_str());
+    }
+    
+    // Now create the index table with the sorted data
+    vector<string> indexColumns = {"value", "rowNumber"};
+    cout << "DEBUG: Creating index table with columns: value, rowNumber" << endl;
+    Table* indexTable = new Table(indexTableName, indexColumns);
+    
+    // Write the sorted index data to the table
+    cout << "DEBUG: Writing sorted index data to table" << endl;
+    for (const auto& entry : indexData) {
+        vector<int> indexRow = {entry.first, entry.second};
+        try {
+            indexTable->updateStatistics(indexRow);
+            indexTable->writeRow<int>(indexRow);
+        } catch (const exception& e) {
+            cout << "ERROR: Exception while writing index row: " << e.what() << endl;
+            delete indexTable;
+            return false;
+        }
+    }
+    
+    cout << "DEBUG: Blockifying index table" << endl;
+    
+    // Blockify the index table and make it permanent
+    if (indexTable->blockify()) {
+        cout << "DEBUG: Blockify successful" << endl;
+        
+        // Update the table to mark it as indexed
+        this->indexed = true;
+        this->indexedColumn = columnName;
+        this->indexingStrategy = NOTHING; // Simple indexing for now
+        
+        // Add the index table to the catalogue
+        cout << "DEBUG: Adding index table to catalogue" << endl;
+        tableCatalogue.insertTable(indexTable);
+        
+        cout << "Index built successfully on " << this->tableName << "." << columnName << endl;
+        return true;
+    }
+    
+    cout << "Error: Failed to build index" << endl;
+    delete indexTable;
+    return false;
+}
+
+/**
+ * @brief Search the index for rows matching the condition
+ * 
+ * @param columnName the name of the column to search
+ * @param value the value to search for
+ * @param op the binary operator for comparison
+ * @return vector<int> a vector of row numbers that match the condition
+ */
+vector<int> Table::searchIndexed(string columnName, int value, BinaryOperator op) {
+    logger.log("Table::searchIndexed");
+    cout << "DEBUG: Searching index on " << this->tableName << "." << columnName << " for value " << value << endl;
+    
+    vector<int> matchingRows;
+    
+    if (!this->isIndexed(columnName)) {
+        cout << "Error: Table " << this->tableName << " is not indexed on column " << columnName << endl;
+        return matchingRows;
+    }
+    
+    string indexTableName = this->tableName + "_" + columnName + "_index";
+    Table* indexTable = tableCatalogue.getTable(indexTableName);
+    
+    if (!indexTable) {
+        cout << "Error: Index table not found" << endl;
+        return matchingRows;
+    }
+    
+    // Load all index data into memory
+    vector<pair<int, int>> indexData;
+    try {
+        Cursor cursor = indexTable->getCursor();
+        vector<int> indexRow = cursor.getNext();
+        
+        while (!indexRow.empty()) {
+            if (indexRow.size() >= 2) {
+                indexData.push_back(make_pair(indexRow[0], indexRow[1]));
+            }
+            indexRow = cursor.getNext();
+        }
+        
+        cout << "DEBUG: Loaded " << indexData.size() << " index entries" << endl;
+    } catch (const exception& e) {
+        cout << "ERROR: Exception while loading index data: " << e.what() << endl;
+        return matchingRows;
+    }
+    
+    // Sort the index data by value (should already be sorted, but just to be safe)
+    sort(indexData.begin(), indexData.end());
+    
+    // For EQUAL operator, we can use binary search for better performance
+    if (op == EQUAL) {
+        cout << "DEBUG: Using binary search for EQUAL operator" << endl;
+        
+        // Perform binary search
+        int left = 0;
+        int right = indexData.size() - 1;
+        
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+            int midValue = indexData[mid].first;
+            
+            if (midValue == value) {
+                // Found a match, add it to the result
+                matchingRows.push_back(indexData[mid].second);
+                
+                // Check for more matches to the left
+                int leftPtr = mid - 1;
+                while (leftPtr >= 0 && indexData[leftPtr].first == value) {
+                    matchingRows.push_back(indexData[leftPtr].second);
+                    leftPtr--;
+                }
+                
+                // Check for more matches to the right
+                int rightPtr = mid + 1;
+                while (rightPtr < indexData.size() && indexData[rightPtr].first == value) {
+                    matchingRows.push_back(indexData[rightPtr].second);
+                    rightPtr++;
+                }
+                
+                break;
+            } else if (midValue < value) {
+                left = mid + 1;
+            } else {
+                right = mid - 1;
+            }
+        }
+    } else {
+        cout << "DEBUG: Using linear scan for non-EQUAL operator" << endl;
+        
+        // For other operators, we need to scan the index
+        for (const auto& entry : indexData) {
+            int indexValue = entry.first;
+            int rowNumber = entry.second;
+            
+            if (evaluateBinOp(indexValue, value, op)) {
+                matchingRows.push_back(rowNumber);
+            }
+            
+            // Optimization: If we've passed the value for certain operators, we can stop
+            if ((op == LESS_THAN || op == LEQ) && indexValue > value) {
+                break;
+            }
+        }
+    }
+    
+    cout << "DEBUG: Found " << matchingRows.size() << " matching rows" << endl;
+    return matchingRows;
+}
+
+/**
+ * @brief Check if the table is indexed on the specified column
+ * 
+ * @param columnName the name of the column to check
+ * @return true if the table is indexed on the column
+ * @return false otherwise
+ */
+bool Table::isIndexed(string columnName) {
+    logger.log("Table::isIndexed");
+    cout << "DEBUG: Checking if table " << this->tableName << " is indexed on column " << columnName << endl;
+    cout << "DEBUG: Table indexed status: " << (this->indexed ? "true" : "false") << endl;
+    if (this->indexed) {
+        cout << "DEBUG: Table indexed column: " << this->indexedColumn << endl;
+    }
+    
+    bool result = this->indexed && this->indexedColumn == columnName;
+    cout << "DEBUG: isIndexed result: " << (result ? "true" : "false") << endl;
+    return result;
+}
+
+/**
  * @brief Construct a new Table:: Table object
  *
  */
 Table::Table()
 {
     logger.log("Table::Table");
+    this->indexed = false;
+    this->indexedColumn = "";
+    this->indexingStrategy = NOTHING;
 }
 vector<int> sortValues, columnIndexes;
 /**
@@ -19,6 +268,9 @@ vector<int> sortValues, columnIndexes;
 Table::Table(string tableName)
 {
     logger.log("Table::Table");
+    this->indexed = false;
+    this->indexedColumn = "";
+    this->indexingStrategy = NOTHING;
     if (strncmp(tableName.c_str(), "temp/", 5) == 0)
     {
         this->sourceFileName = "../data/" + tableName + ".csv";
@@ -94,11 +346,37 @@ Matrix::Matrix(string matrixname)
 Table::Table(string tableName, vector<string> columns)
 {
     logger.log("Table::Table");
+    this->indexed = false;
+    this->indexedColumn = "";
+    this->indexingStrategy = NOTHING;
+    
+    // Ensure the temp directory exists
+    string tempDir = "../data/temp";
+    struct stat info;
+    if (stat(tempDir.c_str(), &info) != 0 || !(info.st_mode & S_IFDIR)) {
+        cout << "DEBUG: Creating temp directory: " << tempDir << endl;
+        system(("mkdir -p " + tempDir).c_str());
+    }
+    
     this->sourceFileName = "../data/temp/" + tableName + ".csv";
     this->tableName = tableName;
     this->columns = columns;
     this->columnCount = columns.size();
     this->maxRowsPerBlock = (uint)((BLOCK_SIZE * 1000) / (sizeof(int) * columnCount));
+    
+    // Initialize distinctValuesInColumns and distinctValuesPerColumnCount
+    unordered_set<int> dummy;
+    this->distinctValuesInColumns.assign(this->columnCount, dummy);
+    this->distinctValuesPerColumnCount.assign(this->columnCount, 0);
+    
+    // Make sure we can open the file for writing
+    ofstream testFile(this->sourceFileName);
+    if (!testFile) {
+        cout << "ERROR: Failed to create file at " << this->sourceFileName << endl;
+        throw runtime_error("Failed to create file: " + this->sourceFileName);
+    }
+    testFile.close();
+    
     this->writeRow<string>(columns);
 }
 
@@ -314,7 +592,19 @@ bool Matrix::blockify()
 void Table::updateStatistics(vector<int> row)
 {
     this->rowCount++;
-    for (int columnCounter = 0; columnCounter < this->columnCount; columnCounter++)
+    
+    // Ensure distinctValuesInColumns and distinctValuesPerColumnCount are properly sized
+    if (this->distinctValuesInColumns.size() != this->columnCount) {
+        unordered_set<int> dummy;
+        this->distinctValuesInColumns.assign(this->columnCount, dummy);
+    }
+    
+    if (this->distinctValuesPerColumnCount.size() != this->columnCount) {
+        this->distinctValuesPerColumnCount.assign(this->columnCount, 0);
+    }
+    
+    // Update statistics for each column
+    for (int columnCounter = 0; columnCounter < this->columnCount && columnCounter < row.size(); columnCounter++)
     {
         if (!this->distinctValuesInColumns[columnCounter].count(row[columnCounter]))
         {
@@ -456,13 +746,24 @@ void Matrix::updateStatistics(vector<int> row)
 bool Table::isColumn(string columnName)
 {
     logger.log("Table::isColumn");
+    cout << "DEBUG: Checking if column " << columnName << " exists in table " << this->tableName << endl;
+    cout << "DEBUG: Table has " << this->columnCount << " columns: ";
+    for (int i = 0; i < this->columnCount; i++) {
+        cout << this->columns[i];
+        if (i < this->columnCount - 1) cout << ", ";
+    }
+    cout << endl;
+    
     for (auto col : this->columns)
     {
         if (col == columnName)
         {
+            cout << "DEBUG: Column " << columnName << " found in table " << this->tableName << endl;
             return true;
         }
     }
+    
+    cout << "DEBUG: Column " << columnName << " NOT found in table " << this->tableName << endl;
     return false;
 }
 
@@ -748,11 +1049,24 @@ Cursor Table::getCursor()
 int Table::getColumnIndex(string columnName)
 {
     logger.log("Table::getColumnIndex");
+    cout << "DEBUG: Getting column index for " << columnName << " in table " << this->tableName << endl;
+    cout << "DEBUG: Table has " << this->columnCount << " columns: ";
+    for (int i = 0; i < this->columnCount; i++) {
+        cout << this->columns[i];
+        if (i < this->columnCount - 1) cout << ", ";
+    }
+    cout << endl;
+    
     for (int columnCounter = 0; columnCounter < this->columnCount; columnCounter++)
     {
-        if (this->columns[columnCounter] == columnName)
+        if (this->columns[columnCounter] == columnName) {
+            cout << "DEBUG: Found column " << columnName << " at index " << columnCounter << endl;
             return columnCounter;
+        }
     }
+    
+    cout << "ERROR: Column " << columnName << " not found in table " << this->tableName << endl;
+    return -1; // Return -1 if column not found
 }
 
 void Table::groupBy()
@@ -1171,6 +1485,9 @@ void Table::joinTables()
 Table::Table(string tableName, vector<string> columns, bool ORDER_BY_OPERATION, int block_count)
 {
     logger.log("Table::Table");
+    this->indexed = false;
+    this->indexedColumn = "";
+    this->indexingStrategy = NOTHING;
 
     this->tableName = tableName;
     this->columns = columns;

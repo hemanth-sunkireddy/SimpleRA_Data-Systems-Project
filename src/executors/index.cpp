@@ -54,5 +54,16 @@ bool semanticParseINDEX()
 void executeINDEX()
 {
     logger.log("executeINDEX");
+    
+    // Get the table
+    Table* table = tableCatalogue.getTable(parsedQuery.indexRelationName);
+    
+    // Create an index on the specified column
+    if (table->buildIndex(parsedQuery.indexColumnName)) {
+        cout << "Index created successfully on " << parsedQuery.indexRelationName << "." << parsedQuery.indexColumnName << endl;
+    } else {
+        cout << "Failed to create index on " << parsedQuery.indexRelationName << "." << parsedQuery.indexColumnName << endl;
+    }
+    
     return;
 }

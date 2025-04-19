@@ -20,6 +20,7 @@ void executeCommand(){
         case PROJECTION: executePROJECTION(); break;
         case RENAME: executeRENAME(); break;
         case SELECTION: executeSELECTION(); break;
+        case SEARCH: executeSEARCH(); break;
         case SORT: executeSORT(); break;
         case SOURCE: executeSOURCE(); break;
         case ROTATE_MATRIX: executeROTATE_MATRIX(); break;
