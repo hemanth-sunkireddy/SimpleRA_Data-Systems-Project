@@ -27,6 +27,10 @@ class BufferManager{
     Page getFromPool(string pageName);
     Page insertIntoPool(string tableName, int pageIndex);
     Page insertIntoPool(string tableName, int pageIndex, int is_matrix);
+    
+    // Set of tables that are currently being indexed
+    // This helps prevent evicting pages from tables that are being indexed
+    unordered_set<string> tablesBeingIndexed;
 
     public:
     
@@ -38,4 +42,9 @@ class BufferManager{
     void deleteFile(string fileName);
     void deletePage(string pageName);
     void writePage(string tableName, int pageIndex, vector<vector<int>> rows, int rowCount);
+    
+    // Methods to mark tables as being indexed
+    void markTableAsBeingIndexed(string tableName);
+    void unmarkTableAsBeingIndexed(string tableName);
+    bool isTableBeingIndexed(string tableName);
 };

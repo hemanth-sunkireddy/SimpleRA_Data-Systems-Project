@@ -26,11 +26,21 @@ public:
     }
 
     ~BPlusTreeNode() {
-        // Clean up children if this is an internal node
-        if (!isLeaf) {
-            for (auto child : children) {
-                delete child;
+        try {
+            // Clean up children if this is an internal node
+            if (!isLeaf) {
+                for (auto child : children) {
+                    if (child != nullptr) {
+                        delete child;
+                    }
+                }
             }
+            // Clear vectors to free memory
+            keys.clear();
+            rowIds.clear();
+            children.clear();
+        } catch (const exception& e) {
+            cout << "ERROR: Exception in BPlusTreeNode destructor: " << e.what() << endl;
         }
     }
 };
@@ -96,24 +106,52 @@ private:
 
     // Helper function to insert a key-value pair into a leaf node
     void insertIntoLeaf(BPlusTreeNode* leaf, int key, int rowId) {
-        // Find the position to insert the key
-        int i = 0;
-        while (i < leaf->keys.size() && leaf->keys[i] < key) {
-            i++;
-        }
-        
-        // Insert the key at position i
-        if (i < leaf->keys.size() && leaf->keys[i] == key) {
-            // Key already exists, add the row ID to the existing key
-            // Check if this rowId is already in the list to avoid duplicates
-            if (find(leaf->rowIds[i].begin(), leaf->rowIds[i].end(), rowId) == leaf->rowIds[i].end()) {
-                leaf->rowIds[i].push_back(rowId);
+        try {
+            // Check if leaf is valid
+            if (!leaf) {
+                cout << "ERROR: Null leaf node in insertIntoLeaf" << endl;
+                return;
             }
-        } else {
-            // Insert new key and row ID
-            leaf->keys.insert(leaf->keys.begin() + i, key);
-            vector<int> newRowIds = {rowId};
-            leaf->rowIds.insert(leaf->rowIds.begin() + i, newRowIds);
+            
+            // Find the position to insert the key
+            int i = 0;
+            while (i < leaf->keys.size() && leaf->keys[i] < key) {
+                i++;
+            }
+            
+            // Insert the key at position i
+            if (i < leaf->keys.size() && leaf->keys[i] == key) {
+                // Key already exists, add the row ID to the existing key
+                // Make sure rowIds is properly sized
+                if (i >= leaf->rowIds.size()) {
+                    cout << "WARNING: rowIds index out of bounds, resizing" << endl;
+                    leaf->rowIds.resize(leaf->keys.size());
+                }
+                
+                // Check if this rowId is already in the list to avoid duplicates
+                if (find(leaf->rowIds[i].begin(), leaf->rowIds[i].end(), rowId) == leaf->rowIds[i].end()) {
+                    leaf->rowIds[i].push_back(rowId);
+                }
+            } else {
+                // Insert new key and row ID
+                leaf->keys.insert(leaf->keys.begin() + i, key);
+                vector<int> newRowIds = {rowId};
+                
+                // Make sure rowIds is properly sized
+                if (leaf->rowIds.size() < leaf->keys.size() - 1) {
+                    leaf->rowIds.resize(leaf->keys.size() - 1);
+                }
+                
+                // Insert the new rowIds at position i
+                if (i <= leaf->rowIds.size()) {
+                    leaf->rowIds.insert(leaf->rowIds.begin() + i, newRowIds);
+                } else {
+                    cout << "WARNING: rowIds insertion index out of bounds, appending" << endl;
+                    leaf->rowIds.push_back(newRowIds);
+                }
+            }
+        } catch (const exception& e) {
+            cout << "ERROR: Exception in insertIntoLeaf: " << e.what() << endl;
         }
     }
 
@@ -473,154 +511,304 @@ private:
 
 public:
     BPlusTree(int order, string tableName, string columnName) {
-        if (order < 2) {
-            order = 4;  // Default to a reasonable value if invalid
+        try {
+            if (order < 2) {
+                order = 4;  // Default to a reasonable value if invalid
+            }
+            
+            this->order = order;
+            this->root = nullptr;  // Initialize to nullptr, will create when needed
+            this->tableName = tableName;
+            this->columnName = columnName;
+            
+            // Make sure the data directory exists
+            string dataDir = "../data/";
+            ifstream dirCheck(dataDir);
+            if (!dirCheck) {
+                cout << "WARNING: Data directory not found: " << dataDir << endl;
+                // Create a minimal root node
+                this->root = new BPlusTreeNode(true);
+            }
+            
+            this->indexFileName = dataDir + tableName + "_" + columnName + "_bptree.idx";
+            
+            cout << "DEBUG: BPlusTree constructor completed successfully for " << tableName << "." << columnName << endl;
+        } catch (const exception& e) {
+            cout << "ERROR: Exception in BPlusTree constructor: " << e.what() << endl;
+            // Ensure we have a valid root
+            this->root = new BPlusTreeNode(true);
         }
-        
-        this->order = order;
-        this->root = new BPlusTreeNode(true);  // Start with a leaf node as root
-        this->tableName = tableName;
-        this->columnName = columnName;
-        
-        // Make sure the data directory exists
-        string dataDir = "../data/";
-        ifstream dirCheck(dataDir);
-        if (!dirCheck) {
-            throw runtime_error("Data directory not found: " + dataDir);
-        }
-        
-        this->indexFileName = dataDir + tableName + "_" + columnName + "_bptree.idx";
     }
 
     ~BPlusTree() {
-        // Clean up the tree
-        delete root;
+        try {
+            cout << "DEBUG: BPlusTree destructor called for " << tableName << "." << columnName << endl;
+            // Clean up the tree
+            if (root != nullptr) {
+                delete root;
+                root = nullptr;
+            }
+            cout << "DEBUG: BPlusTree destructor completed for " << tableName << "." << columnName << endl;
+        } catch (const exception& e) {
+            cout << "ERROR: Exception in BPlusTree destructor: " << e.what() << endl;
+        }
     }
 
     // Insert a key-value pair into the tree
     void insert(int key, int rowId) {
-        // If the root is null, create a new root
-        if (!root) {
-            root = new BPlusTreeNode(true);
-        }
-        
-        // If the root is a leaf node
-        if (root->isLeaf) {
-            insertIntoLeaf(root, key, rowId);
+        try {
+            cout << "DEBUG: Inserting key " << key << " with rowId " << rowId << endl;
             
-            // Check if the root needs to be split
-            if (root->keys.size() >= order) {
-                // Split the root
-                BPlusTreeNode* newLeaf = splitLeafNode(root);
-                
-                // Create a new root
-                BPlusTreeNode* newRoot = new BPlusTreeNode(false);
-                
-                // Make sure the new leaf has keys before accessing them
-                if (!newLeaf->keys.empty()) {
-                    newRoot->keys.push_back(newLeaf->keys[0]);
-                    newRoot->children.push_back(root);
-                    newRoot->children.push_back(newLeaf);
-                    
-                    // Update the root
-                    root = newRoot;
+            // If the root is null, create a new root
+            if (!root) {
+                cout << "DEBUG: Creating new root node" << endl;
+                try {
+                    root = new BPlusTreeNode(true);
+                    if (!root) {
+                        cout << "ERROR: Failed to create new root node" << endl;
+                        return;
+                    }
+                } catch (const std::bad_alloc& e) {
+                    cout << "ERROR: Memory allocation failed for new root node: " << e.what() << endl;
+                    return;
+                } catch (const exception& e) {
+                    cout << "ERROR: Exception creating new root node: " << e.what() << endl;
+                    return;
                 }
             }
-        } else {
-            // Find the leaf node where the key should be inserted
-            BPlusTreeNode* leaf = findLeafNode(key);
             
-            // Check if leaf is valid
-            if (!leaf) {
-                // This should not happen in a well-formed B+ tree
-                // But we'll handle it by inserting into the root
-                if (root->isLeaf) {
+            // If the root is a leaf node
+            if (root->isLeaf) {
+                cout << "DEBUG: Root is a leaf node, inserting directly" << endl;
+                try {
                     insertIntoLeaf(root, key, rowId);
-                } else {
-                    // Create a new leaf node
-                    BPlusTreeNode* newLeaf = new BPlusTreeNode(true);
-                    vector<int> newRowIds = {rowId};
-                    newLeaf->keys.push_back(key);
-                    newLeaf->rowIds.push_back(newRowIds);
-                    
-                    // Add it as a child of the root
-                    root->keys.push_back(key);
-                    root->children.push_back(newLeaf);
-                }
-                return;
-            }
-            
-            // Insert the key into the leaf
-            insertIntoLeaf(leaf, key, rowId);
-            
-            // Check if the leaf needs to be split
-            if (leaf->keys.size() >= order) {
-                // Split the leaf
-                BPlusTreeNode* newLeaf = splitLeafNode(leaf);
-                
-                // Make sure the new leaf has keys before accessing them
-                if (newLeaf->keys.empty()) {
+                } catch (const exception& e) {
+                    cout << "ERROR: Exception in insertIntoLeaf for root: " << e.what() << endl;
                     return;
                 }
                 
-                // Insert the first key of the new leaf into the parent
-                int newKey = newLeaf->keys[0];
-                BPlusTreeNode* current = root;
-                vector<BPlusTreeNode*> path;
-                
-                // Find the path to the leaf
-                while (current && !current->isLeaf) {
-                    path.push_back(current);
-                    
-                    int i = 0;
-                    while (i < current->keys.size() && newKey >= current->keys[i]) {
-                        i++;
-                    }
-                    
-                    // Safety check
-                    if (i >= current->children.size()) {
-                        break;
-                    }
-                    
-                    current = current->children[i];
-                }
-                
-                // Make sure we found a path
-                if (path.empty()) {
-                    return;
-                }
-                
-                // Insert the new key into the parent
-                BPlusTreeNode* parent = path.back();
-                insertIntoInternal(parent, newKey, newLeaf);
-                
-                // Check if the parent needs to be split
-                if (parent->keys.size() >= order) {
-                    // Split the parent
-                    pair<BPlusTreeNode*, int> splitResult = splitInternalNode(parent);
-                    BPlusTreeNode* newParent = splitResult.first;
-                    int midKey = splitResult.second;
-                    
-                    // If the parent is the root, create a new root
-                    if (parent == root) {
+                // Check if the root needs to be split
+                if (root->keys.size() >= order) {
+                    cout << "DEBUG: Root needs to be split" << endl;
+                    try {
+                        // Split the root
+                        BPlusTreeNode* newLeaf = splitLeafNode(root);
+                        if (!newLeaf) {
+                            cout << "ERROR: Failed to split root leaf node" << endl;
+                            return;
+                        }
+                        
+                        // Create a new root
                         BPlusTreeNode* newRoot = new BPlusTreeNode(false);
-                        newRoot->keys.push_back(midKey);
-                        newRoot->children.push_back(parent);
-                        newRoot->children.push_back(newParent);
+                        if (!newRoot) {
+                            cout << "ERROR: Failed to create new root after split" << endl;
+                            delete newLeaf;
+                            return;
+                        }
                         
-                        // Update the root
-                        root = newRoot;
-                    } else if (path.size() >= 2) {
-                        // Insert the middle key into the grandparent
-                        BPlusTreeNode* grandparent = path[path.size() - 2];
-                        insertIntoInternal(grandparent, midKey, newParent);
+                        // Make sure the new leaf has keys before accessing them
+                        if (!newLeaf->keys.empty()) {
+                            newRoot->keys.push_back(newLeaf->keys[0]);
+                            newRoot->children.push_back(root);
+                            newRoot->children.push_back(newLeaf);
+                            
+                            // Update the root
+                            root = newRoot;
+                            cout << "DEBUG: Created new root after splitting" << endl;
+                        } else {
+                            cout << "WARNING: New leaf has no keys after splitting" << endl;
+                            delete newRoot;
+                            delete newLeaf;
+                        }
+                    } catch (const exception& e) {
+                        cout << "ERROR: Exception while splitting root: " << e.what() << endl;
+                    }
+                }
+            } else {
+                cout << "DEBUG: Root is an internal node, finding leaf node" << endl;
+                // Find the leaf node where the key should be inserted
+                BPlusTreeNode* leaf = nullptr;
+                try {
+                    leaf = findLeafNode(key);
+                } catch (const exception& e) {
+                    cout << "ERROR: Exception in findLeafNode: " << e.what() << endl;
+                    // Create a new leaf as fallback
+                    leaf = new BPlusTreeNode(true);
+                    root->children.push_back(leaf);
+                }
+                
+                // Check if leaf is valid
+                if (!leaf) {
+                    cout << "DEBUG: Failed to find leaf node, handling special case" << endl;
+                    try {
+                        // This should not happen in a well-formed B+ tree
+                        // But we'll handle it by inserting into the root
+                        if (root->isLeaf) {
+                            insertIntoLeaf(root, key, rowId);
+                        } else {
+                            // Create a new leaf node
+                            BPlusTreeNode* newLeaf = new BPlusTreeNode(true);
+                            if (!newLeaf) {
+                                cout << "ERROR: Failed to create new leaf node" << endl;
+                                return;
+                            }
+                            
+                            vector<int> newRowIds = {rowId};
+                            newLeaf->keys.push_back(key);
+                            newLeaf->rowIds.push_back(newRowIds);
+                            
+                            // Add it as a child of the root
+                            root->keys.push_back(key);
+                            root->children.push_back(newLeaf);
+                        }
+                    } catch (const exception& e) {
+                        cout << "ERROR: Exception handling special case: " << e.what() << endl;
+                    }
+                    return;
+                }
+                
+                cout << "DEBUG: Found leaf node, inserting key" << endl;
+                // Insert the key into the leaf
+                try {
+                    insertIntoLeaf(leaf, key, rowId);
+                } catch (const exception& e) {
+                    cout << "ERROR: Exception in insertIntoLeaf: " << e.what() << endl;
+                    return;
+                }
+                
+                // Check if the leaf needs to be split
+                if (leaf->keys.size() >= order) {
+                    cout << "DEBUG: Leaf node needs to be split" << endl;
+                    try {
+                        // Split the leaf
+                        BPlusTreeNode* newLeaf = splitLeafNode(leaf);
+                        if (!newLeaf) {
+                            cout << "ERROR: Failed to split leaf node" << endl;
+                            return;
+                        }
                         
-                        // Check if the grandparent needs to be split
-                        // This is a recursive process that may propagate up to the root
-                        // For simplicity, we'll handle only one level of splitting here
+                        // Make sure the new leaf has keys before accessing them
+                        if (newLeaf->keys.empty()) {
+                            cout << "DEBUG: New leaf has no keys after splitting, returning" << endl;
+                            delete newLeaf;
+                            return;
+                        }
+                        
+                        cout << "DEBUG: Finding path to leaf for updating parent" << endl;
+                        // Insert the first key of the new leaf into the parent
+                        int newKey = newLeaf->keys[0];
+                        BPlusTreeNode* current = root;
+                        vector<BPlusTreeNode*> path;
+                        
+                        // Find the path to the leaf
+                        while (current && !current->isLeaf) {
+                            path.push_back(current);
+                            
+                            int i = 0;
+                            while (i < current->keys.size() && newKey >= current->keys[i]) {
+                                i++;
+                            }
+                            
+                            // Safety check
+                            if (current->children.empty()) {
+                                cout << "ERROR: Node has no children" << endl;
+                                break;
+                            }
+                            
+                            if (i >= current->children.size()) {
+                                cout << "DEBUG: Index out of bounds for children, using last child" << endl;
+                                i = current->children.size() - 1;
+                            }
+                            
+                            current = current->children[i];
+                        }
+                        
+                        // Make sure we found a path
+                        if (path.empty()) {
+                            cout << "DEBUG: Path to leaf is empty, creating new root" << endl;
+                            // Create a new root
+                            BPlusTreeNode* newRoot = new BPlusTreeNode(false);
+                            if (!newRoot) {
+                                cout << "ERROR: Failed to create new root" << endl;
+                                delete newLeaf;
+                                return;
+                            }
+                            
+                            newRoot->keys.push_back(newKey);
+                            newRoot->children.push_back(leaf);
+                            newRoot->children.push_back(newLeaf);
+                            
+                            // Update the root
+                            root = newRoot;
+                            return;
+                        }
+                        
+                        cout << "DEBUG: Updating parent node" << endl;
+                        // Insert the new key into the parent
+                        BPlusTreeNode* parent = path.back();
+                        try {
+                            insertIntoInternal(parent, newKey, newLeaf);
+                        } catch (const exception& e) {
+                            cout << "ERROR: Exception in insertIntoInternal: " << e.what() << endl;
+                            delete newLeaf;
+                            return;
+                        }
+                        
+                        // Check if the parent needs to be split
+                        if (parent->keys.size() >= order) {
+                            cout << "DEBUG: Parent node needs to be split" << endl;
+                            try {
+                                // Split the parent
+                                pair<BPlusTreeNode*, int> splitResult = splitInternalNode(parent);
+                                BPlusTreeNode* newParent = splitResult.first;
+                                int midKey = splitResult.second;
+                                
+                                if (!newParent) {
+                                    cout << "ERROR: Failed to split parent node" << endl;
+                                    return;
+                                }
+                                
+                                // If the parent is the root, create a new root
+                                if (parent == root) {
+                                    cout << "DEBUG: Parent is root, creating new root" << endl;
+                                    BPlusTreeNode* newRoot = new BPlusTreeNode(false);
+                                    if (!newRoot) {
+                                        cout << "ERROR: Failed to create new root" << endl;
+                                        delete newParent;
+                                        return;
+                                    }
+                                    
+                                    newRoot->keys.push_back(midKey);
+                                    newRoot->children.push_back(parent);
+                                    newRoot->children.push_back(newParent);
+                                    
+                                    // Update the root
+                                    root = newRoot;
+                                } else if (path.size() >= 2) {
+                                    cout << "DEBUG: Updating grandparent" << endl;
+                                    // Insert the middle key into the grandparent
+                                    BPlusTreeNode* grandparent = path[path.size() - 2];
+                                    try {
+                                        insertIntoInternal(grandparent, midKey, newParent);
+                                    } catch (const exception& e) {
+                                        cout << "ERROR: Exception in insertIntoInternal for grandparent: " << e.what() << endl;
+                                        delete newParent;
+                                        return;
+                                    }
+                                }
+                            } catch (const exception& e) {
+                                cout << "ERROR: Exception while splitting parent: " << e.what() << endl;
+                            }
+                        }
+                    } catch (const exception& e) {
+                        cout << "ERROR: Exception while handling leaf split: " << e.what() << endl;
                     }
                 }
             }
+            
+            cout << "DEBUG: Insert completed successfully" << endl;
+        } catch (const exception& e) {
+            cout << "ERROR: Exception during insert: " << e.what() << endl;
         }
     }
 

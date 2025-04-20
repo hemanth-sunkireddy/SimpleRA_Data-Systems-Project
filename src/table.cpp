@@ -4,10 +4,28 @@
  * @brief Destructor for Table class
  */
 Table::~Table() {
-    if (bPlusTreeIndex != nullptr) {
-        delete bPlusTreeIndex;
-        bPlusTreeIndex = nullptr;
+    cout << "DEBUG: Table destructor called for " << this->tableName << endl;
+    
+    // First, set the legacy bPlusTreeIndex to nullptr to avoid double deletion
+    // since it points to the same object as one of the indices
+    bPlusTreeIndex = nullptr;
+    
+    // Clean up all indices in the map
+    cout << "DEBUG: Cleaning up " << indices.size() << " indices" << endl;
+    for (auto& pair : indices) {
+        if (pair.second != nullptr) {
+            if (pair.second->bPlusTreeIndex != nullptr) {
+                cout << "DEBUG: Deleting B+ tree index for column " << pair.first << endl;
+                delete pair.second->bPlusTreeIndex;
+                pair.second->bPlusTreeIndex = nullptr;
+            }
+            delete pair.second;
+            pair.second = nullptr;
+        }
     }
+    
+    indices.clear();
+    cout << "DEBUG: Table destructor completed for " << this->tableName << endl;
 }
 
 /**
@@ -25,111 +43,206 @@ bool Table::buildIndex(string columnName) {
         cout << "Error: Column " << columnName << " does not exist in table " << this->tableName << endl;
         return false;
     }
-
-    cout << "Now checking if the table is already indexed..." << endl;
-
-    // Check if we already have an index on this column
-    if (this->indexed && this->indexedColumn == columnName) {
-        cout << "Table " << this->tableName << " is already indexed on column " << columnName << endl;
+    
+    // Mark this table as being indexed to prevent its pages from being evicted
+    bufferManager.markTableAsBeingIndexed(this->tableName);
+    
+    // Load all pages into memory before starting to build the index
+    // This helps prevent page eviction issues during index building
+    cout << "DEBUG: Pre-loading table pages into memory" << endl;
+    try {
+        // Create a cursor to iterate through the table
+        Cursor cursor = this->getCursor();
+        vector<int> row = cursor.getNext();
+        
+        // Just iterate through all rows to load pages into memory
+        while (!row.empty()) {
+            row = cursor.getNext();
+        }
+        
+        cout << "DEBUG: Pre-loaded all table pages into memory" << endl;
+    } catch (const exception& e) {
+        cout << "WARNING: Exception during page pre-loading: " << e.what() << endl;
+        // Continue anyway, this is just an optimization
+    }
+    
+    cout << "DEBUG: Checking if index already exists for column " << columnName << endl;
+    
+    // Check if we already have an index on this column in our map
+    auto it = indices.find(columnName);
+    if (it != indices.end()) {
+        cout << "DEBUG: Found existing index for column " << columnName << endl;
+        
+        // We already have an index for this column
+        IndexInfo* indexInfo = it->second;
         
         // If the index exists but is not a B+ tree, rebuild it
-        if (this->indexingStrategy != BTREE) {
+        if (indexInfo->strategy != BTREE) {
             cout << "Rebuilding index as B+ tree..." << endl;
         } else {
             // If we already have a B+ tree index on this column, check if it's loaded
-            if (bPlusTreeIndex != nullptr) {
+            if (indexInfo->bPlusTreeIndex != nullptr) {
                 cout << "B+ tree index already loaded and ready to use" << endl;
+                
+                // Update legacy fields for backward compatibility
+                this->indexed = true;
+                this->indexedColumn = columnName;
+                this->indexingStrategy = BTREE;
+                // Just point to the same object, don't create a new reference
+                this->bPlusTreeIndex = indexInfo->bPlusTreeIndex;
+                
                 return true;
             } else {
                 // Try to load the existing index from disk
                 cout << "Loading existing B+ tree index from disk..." << endl;
                 try {
-                    bPlusTreeIndex = new BPlusTree(4, this->tableName, columnName);
-                    if (bPlusTreeIndex->loadFromDisk()) {
+                    cout << "DEBUG: Creating new BPlusTree object for " << this->tableName << "." << columnName << endl;
+                    indexInfo->bPlusTreeIndex = new BPlusTree(4, this->tableName, columnName);
+                    cout << "DEBUG: BPlusTree object created successfully" << endl;
+                    
+                    if (indexInfo->bPlusTreeIndex->loadFromDisk()) {
                         cout << "Successfully loaded B+ tree index from disk" << endl;
+                        
+                        // Update legacy fields for backward compatibility
+                        this->indexed = true;
+                        this->indexedColumn = columnName;
+                        this->indexingStrategy = BTREE;
+                        // Just point to the same object, don't create a new reference
+                        this->bPlusTreeIndex = indexInfo->bPlusTreeIndex;
+                        
                         return true;
                     } else {
                         cout << "Failed to load B+ tree index from disk, rebuilding..." << endl;
-                        delete bPlusTreeIndex;
-                        bPlusTreeIndex = nullptr;
+                        delete indexInfo->bPlusTreeIndex;
+                        indexInfo->bPlusTreeIndex = nullptr;
                         // Continue to rebuild the index
                     }
                 } catch (const exception& e) {
                     cout << "ERROR: Exception while loading B+ tree index: " << e.what() << endl;
-                    if (bPlusTreeIndex != nullptr) {
-                        delete bPlusTreeIndex;
-                        bPlusTreeIndex = nullptr;
+                    if (indexInfo->bPlusTreeIndex != nullptr) {
+                        delete indexInfo->bPlusTreeIndex;
+                        indexInfo->bPlusTreeIndex = nullptr;
                     }
                     // Continue to rebuild the index
                 }
             }
         }
-    }
-    else {
-        cout << "This table is not indexed on Column" << endl;
-    }
-    
-    // Clean up any existing B+ tree index
-    if (bPlusTreeIndex != nullptr) {
-        delete bPlusTreeIndex;
-        bPlusTreeIndex = nullptr;
+    } else {
+        cout << "DEBUG: No existing index found for column " << columnName << endl;
+        
+        // Create a new index info object
+        IndexInfo* newIndexInfo = new IndexInfo(columnName, BTREE);
+        indices[columnName] = newIndexInfo;
+        cout << "DEBUG: Created new index info for column " << columnName << endl;
     }
     
     // Get the column index
+    cout << "DEBUG: Getting column index for " << columnName << " in table " << this->tableName << endl;
     int columnIndex = this->getColumnIndex(columnName);
-
-    cout << "Getting column index again" << endl;
+    cout << "DEBUG: Column index is " << columnIndex << endl;
     
     try {
+        // Get the index info (either existing or newly created)
+        IndexInfo* indexInfo = indices[columnName];
+        
+        // Clean up any existing B+ tree index
+        if (indexInfo->bPlusTreeIndex != nullptr) {
+            cout << "DEBUG: Cleaning up existing B+ tree index for column " << columnName << endl;
+            delete indexInfo->bPlusTreeIndex;
+            indexInfo->bPlusTreeIndex = nullptr;
+        }
+        
         // Create a new B+ tree index (order = 4 for simplicity, can be adjusted)
-        bPlusTreeIndex = new BPlusTree(4, this->tableName, columnName);
+        cout << "DEBUG: Creating new BPlusTree object for " << this->tableName << "." << columnName << endl;
+        indexInfo->bPlusTreeIndex = new BPlusTree(4, this->tableName, columnName);
+        cout << "DEBUG: BPlusTree object created successfully" << endl;
         
         // Create a cursor to iterate through the table
+        cout << "DEBUG: Creating cursor to iterate through table" << endl;
         Cursor cursor = this->getCursor();
         vector<int> row = cursor.getNext();
         int rowCounter = 0;
         
         // For each row, extract the value of the indexed column and insert it into the B+ tree
+        cout << "DEBUG: Starting to process rows for B+ tree index" << endl;
         while (!row.empty()) {
             if (columnIndex >= row.size()) {
                 cout << "ERROR: Column index " << columnIndex << " is out of bounds for row with size " << row.size() << endl;
-                delete bPlusTreeIndex;
-                bPlusTreeIndex = nullptr;
+                delete indexInfo->bPlusTreeIndex;
+                indexInfo->bPlusTreeIndex = nullptr;
                 return false;
             }
             
-            int value = row[columnIndex];
-            
-            // Insert the value and row number into the B+ tree
-            bPlusTreeIndex->insert(value, rowCounter);
-            
-            row = cursor.getNext();
-            rowCounter++;
+            try {
+                int value = row[columnIndex];
+                
+                // Insert the value and row number into the B+ tree
+                cout << "DEBUG: Inserting value " << value << " at row " << rowCounter << " into B+ tree" << endl;
+                indexInfo->bPlusTreeIndex->insert(value, rowCounter);
+                
+                row = cursor.getNext();
+                rowCounter++;
+                
+                // Print progress every 100 rows
+                if (rowCounter % 100 == 0) {
+                    cout << "DEBUG: Processed " << rowCounter << " rows so far" << endl;
+                }
+            } catch (const exception& e) {
+                cout << "ERROR: Exception while inserting into B+ tree: " << e.what() << endl;
+                
+                // Continue with the next row instead of aborting the entire indexing process
+                row = cursor.getNext();
+                rowCounter++;
+            }
         }
         
         cout << "Processed " << rowCounter << " rows for B+ tree index" << endl;
         
         // Save the B+ tree to disk
-        if (bPlusTreeIndex->saveToDisk()) {
-            // Update the table to mark it as indexed
+        cout << "DEBUG: Saving B+ tree to disk" << endl;
+        if (indexInfo->bPlusTreeIndex->saveToDisk()) {
+            // Update the index info
+            indexInfo->strategy = BTREE;
+            
+            // Update legacy fields for backward compatibility
             this->indexed = true;
             this->indexedColumn = columnName;
             this->indexingStrategy = BTREE;
+            // Just point to the same object, don't create a new reference
+            this->bPlusTreeIndex = indexInfo->bPlusTreeIndex;
             
             cout << "B+ tree index built successfully on " << this->tableName << "." << columnName << endl;
+            cout << "DEBUG: Table now has " << indices.size() << " indices" << endl;
+            
+            // Unmark this table as being indexed
+            bufferManager.unmarkTableAsBeingIndexed(this->tableName);
+            
             return true;
         }
         
         cout << "Error: Failed to build B+ tree index" << endl;
-        delete bPlusTreeIndex;
-        bPlusTreeIndex = nullptr;
+        delete indexInfo->bPlusTreeIndex;
+        indexInfo->bPlusTreeIndex = nullptr;
+        
+        // Unmark this table as being indexed
+        bufferManager.unmarkTableAsBeingIndexed(this->tableName);
+        
         return false;
     } catch (const exception& e) {
         cout << "ERROR: Exception while building B+ tree index: " << e.what() << endl;
-        if (bPlusTreeIndex != nullptr) {
-            delete bPlusTreeIndex;
-            bPlusTreeIndex = nullptr;
+        
+        // Clean up in case of exception
+        auto it = indices.find(columnName);
+        if (it != indices.end() && it->second != nullptr) {
+            if (it->second->bPlusTreeIndex != nullptr) {
+                delete it->second->bPlusTreeIndex;
+                it->second->bPlusTreeIndex = nullptr;
+            }
         }
+        
+        // Unmark this table as being indexed
+        bufferManager.unmarkTableAsBeingIndexed(this->tableName);
+        
         return false;
     }
 }
@@ -153,139 +266,293 @@ vector<int> Table::searchIndexed(string columnName, int value, BinaryOperator op
         return matchingRows;
     }
     
-    // Check if we have a B+ tree index
-    if (this->indexingStrategy == BTREE) {
-        try {
-            // If the B+ tree index is not loaded, load it
-            if (bPlusTreeIndex == nullptr) {
-                cout << "Loading B+ tree index from disk..." << endl;
-                bPlusTreeIndex = new BPlusTree(4, this->tableName, columnName);
+    // First check in our indices map
+    auto it = indices.find(columnName);
+    if (it != indices.end() && it->second != nullptr) {
+        IndexInfo* indexInfo = it->second;
+        
+        // Check if we have a B+ tree index
+        if (indexInfo->strategy == BTREE) {
+            try {
+                // If the B+ tree index is not loaded, load it
+                if (indexInfo->bPlusTreeIndex == nullptr) {
+                    cout << "DEBUG: Loading B+ tree index from disk for column " << columnName << endl;
+                    indexInfo->bPlusTreeIndex = new BPlusTree(4, this->tableName, columnName);
+                    
+                    if (!indexInfo->bPlusTreeIndex->loadFromDisk()) {
+                        cout << "Error: Failed to load B+ tree index from disk, rebuilding index..." << endl;
+                        
+                        // Rebuild the index
+                        if (!this->buildIndex(columnName)) {
+                            cout << "Error: Failed to rebuild B+ tree index" << endl;
+                            return matchingRows;
+                        }
+                    }
+                }
                 
-                if (!bPlusTreeIndex->loadFromDisk()) {
-                    cout << "Error: Failed to load B+ tree index from disk, rebuilding index..." << endl;
-                    
-                    // Rebuild the index
-                    if (!this->buildIndex(columnName)) {
-                        cout << "Error: Failed to rebuild B+ tree index" << endl;
-                        return matchingRows;
-                    }
+                // Make sure the index is loaded and valid
+                if (indexInfo->bPlusTreeIndex == nullptr) {
+                    cout << "Error: B+ tree index is null after loading/rebuilding" << endl;
+                    return matchingRows;
                 }
-            }
-            
-            // Make sure the index is loaded and valid
-            if (bPlusTreeIndex == nullptr) {
-                cout << "Error: B+ tree index is null after loading/rebuilding" << endl;
-                return matchingRows;
-            }
-            
-            // Use the B+ tree to search for matching rows
-            cout << "Using B+ tree index for search" << endl;
-            matchingRows = bPlusTreeIndex->search(value, op);
-            cout << "B+ tree search found " << matchingRows.size() << " matching rows" << endl;
-        } catch (const exception& e) {
-            cout << "ERROR: Exception while searching B+ tree index: " << e.what() << endl;
-            if (bPlusTreeIndex != nullptr) {
-                delete bPlusTreeIndex;
-                bPlusTreeIndex = nullptr;
-            }
-            // Fall back to sequential scan
-            cout << "Falling back to sequential scan..." << endl;
-            int columnIndex = this->getColumnIndex(columnName);
-            Cursor cursor = this->getCursor();
-            vector<int> row = cursor.getNext();
-            int rowCounter = 0;
-            
-            while (!row.empty()) {
-                if (columnIndex < row.size()) {
-                    int rowValue = row[columnIndex];
-                    if (evaluateBinOp(rowValue, value, op)) {
-                        matchingRows.push_back(rowCounter);
-                    }
-                }
-                row = cursor.getNext();
-                rowCounter++;
-            }
-        }
-    } else {
-        // Fall back to the old index implementation
-        cout << "Using legacy index for search" << endl;
-        
-        string indexTableName = this->tableName + "_" + columnName + "_index";
-        Table* indexTable = tableCatalogue.getTable(indexTableName);
-        
-        if (!indexTable) {
-            cout << "Error: Index table not found" << endl;
-            return matchingRows;
-        }
-        
-        // Load all index data into memory
-        vector<pair<int, int>> indexData;
-        try {
-            Cursor cursor = indexTable->getCursor();
-            vector<int> indexRow = cursor.getNext();
-            
-            while (!indexRow.empty()) {
-                if (indexRow.size() >= 2) {
-                    indexData.push_back(make_pair(indexRow[0], indexRow[1]));
-                }
-                indexRow = cursor.getNext();
-            }
-        } catch (const exception& e) {
-            cout << "ERROR: Exception while loading index data: " << e.what() << endl;
-            return matchingRows;
-        }
-        
-        // Sort the index data by value (should already be sorted, but just to be safe)
-        sort(indexData.begin(), indexData.end());
-        
-        // For EQUAL operator, we can use binary search for better performance
-        if (op == EQUAL) {
-            // Perform binary search
-            int left = 0;
-            int right = indexData.size() - 1;
-            
-            while (left <= right) {
-                int mid = left + (right - left) / 2;
-                int midValue = indexData[mid].first;
                 
-                if (midValue == value) {
-                    // Found a match, add it to the result
-                    matchingRows.push_back(indexData[mid].second);
-                    
-                    // Check for more matches to the left
-                    int leftPtr = mid - 1;
-                    while (leftPtr >= 0 && indexData[leftPtr].first == value) {
-                        matchingRows.push_back(indexData[leftPtr].second);
-                        leftPtr--;
+                // Update legacy bPlusTreeIndex for backward compatibility
+                // Just point to the same object, don't create a new reference
+                this->bPlusTreeIndex = indexInfo->bPlusTreeIndex;
+                
+                // Use the B+ tree to search for matching rows
+                cout << "Using B+ tree index for search" << endl;
+                matchingRows = indexInfo->bPlusTreeIndex->search(value, op);
+                cout << "B+ tree search found " << matchingRows.size() << " matching rows" << endl;
+            } catch (const exception& e) {
+                cout << "ERROR: Exception while searching B+ tree index: " << e.what() << endl;
+                
+                // Clean up in case of exception
+                if (indexInfo->bPlusTreeIndex != nullptr) {
+                    delete indexInfo->bPlusTreeIndex;
+                    indexInfo->bPlusTreeIndex = nullptr;
+                }
+                
+                // Fall back to sequential scan
+                cout << "Falling back to sequential scan..." << endl;
+                int columnIndex = this->getColumnIndex(columnName);
+                Cursor cursor = this->getCursor();
+                vector<int> row = cursor.getNext();
+                int rowCounter = 0;
+                
+                while (!row.empty()) {
+                    if (columnIndex < row.size()) {
+                        int rowValue = row[columnIndex];
+                        if (evaluateBinOp(rowValue, value, op)) {
+                            matchingRows.push_back(rowCounter);
+                        }
                     }
-                    
-                    // Check for more matches to the right
-                    int rightPtr = mid + 1;
-                    while (rightPtr < indexData.size() && indexData[rightPtr].first == value) {
-                        matchingRows.push_back(indexData[rightPtr].second);
-                        rightPtr++;
-                    }
-                    
-                    break;
-                } else if (midValue < value) {
-                    left = mid + 1;
-                } else {
-                    right = mid - 1;
+                    row = cursor.getNext();
+                    rowCounter++;
                 }
             }
         } else {
-            // For other operators, we need to scan the index
-            for (const auto& entry : indexData) {
-                int indexValue = entry.first;
-                int rowNumber = entry.second;
+            // Fall back to the old index implementation
+            cout << "Using legacy index for search" << endl;
+            
+            string indexTableName = this->tableName + "_" + columnName + "_index";
+            Table* indexTable = tableCatalogue.getTable(indexTableName);
+            
+            if (!indexTable) {
+                cout << "Error: Index table not found" << endl;
+                return matchingRows;
+            }
+            
+            // Load all index data into memory
+            vector<pair<int, int>> indexData;
+            try {
+                Cursor cursor = indexTable->getCursor();
+                vector<int> indexRow = cursor.getNext();
                 
-                if (evaluateBinOp(indexValue, value, op)) {
-                    matchingRows.push_back(rowNumber);
+                while (!indexRow.empty()) {
+                    if (indexRow.size() >= 2) {
+                        indexData.push_back(make_pair(indexRow[0], indexRow[1]));
+                    }
+                    indexRow = cursor.getNext();
+                }
+            } catch (const exception& e) {
+                cout << "ERROR: Exception while loading index data: " << e.what() << endl;
+                return matchingRows;
+            }
+            
+            // Sort the index data by value (should already be sorted, but just to be safe)
+            sort(indexData.begin(), indexData.end());
+            
+            // For EQUAL operator, we can use binary search for better performance
+            if (op == EQUAL) {
+                // Perform binary search
+                int left = 0;
+                int right = indexData.size() - 1;
+                
+                while (left <= right) {
+                    int mid = left + (right - left) / 2;
+                    int midValue = indexData[mid].first;
+                    
+                    if (midValue == value) {
+                        // Found a match, add it to the result
+                        matchingRows.push_back(indexData[mid].second);
+                        
+                        // Check for more matches to the left
+                        int leftPtr = mid - 1;
+                        while (leftPtr >= 0 && indexData[leftPtr].first == value) {
+                            matchingRows.push_back(indexData[leftPtr].second);
+                            leftPtr--;
+                        }
+                        
+                        // Check for more matches to the right
+                        int rightPtr = mid + 1;
+                        while (rightPtr < indexData.size() && indexData[rightPtr].first == value) {
+                            matchingRows.push_back(indexData[rightPtr].second);
+                            rightPtr++;
+                        }
+                        
+                        break;
+                    } else if (midValue < value) {
+                        left = mid + 1;
+                    } else {
+                        right = mid - 1;
+                    }
+                }
+            } else {
+                // For other operators, we need to scan the index
+                for (const auto& entry : indexData) {
+                    int indexValue = entry.first;
+                    int rowNumber = entry.second;
+                    
+                    if (evaluateBinOp(indexValue, value, op)) {
+                        matchingRows.push_back(rowNumber);
+                    }
+                    
+                    // Optimization: If we've passed the value for certain operators, we can stop
+                    if ((op == LESS_THAN || op == LEQ) && indexValue > value) {
+                        break;
+                    }
+                }
+            }
+        }
+    } else if (this->indexed && this->indexedColumn == columnName) {
+        // For backward compatibility, use the legacy fields
+        cout << "DEBUG: Using legacy index fields for column " << columnName << endl;
+        
+        // Check if we have a B+ tree index
+        if (this->indexingStrategy == BTREE) {
+            try {
+                // If the B+ tree index is not loaded, load it
+                if (bPlusTreeIndex == nullptr) {
+                    cout << "Loading B+ tree index from disk..." << endl;
+                    bPlusTreeIndex = new BPlusTree(4, this->tableName, columnName);
+                    
+                    if (!bPlusTreeIndex->loadFromDisk()) {
+                        cout << "Error: Failed to load B+ tree index from disk, rebuilding index..." << endl;
+                        
+                        // Rebuild the index
+                        if (!this->buildIndex(columnName)) {
+                            cout << "Error: Failed to rebuild B+ tree index" << endl;
+                            return matchingRows;
+                        }
+                    }
                 }
                 
-                // Optimization: If we've passed the value for certain operators, we can stop
-                if ((op == LESS_THAN || op == LEQ) && indexValue > value) {
-                    break;
+                // Make sure the index is loaded and valid
+                if (bPlusTreeIndex == nullptr) {
+                    cout << "Error: B+ tree index is null after loading/rebuilding" << endl;
+                    return matchingRows;
+                }
+                
+                // Use the B+ tree to search for matching rows
+                cout << "Using B+ tree index for search" << endl;
+                matchingRows = bPlusTreeIndex->search(value, op);
+                cout << "B+ tree search found " << matchingRows.size() << " matching rows" << endl;
+            } catch (const exception& e) {
+                cout << "ERROR: Exception while searching B+ tree index: " << e.what() << endl;
+                if (bPlusTreeIndex != nullptr) {
+                    delete bPlusTreeIndex;
+                    bPlusTreeIndex = nullptr;
+                }
+                // Fall back to sequential scan
+                cout << "Falling back to sequential scan..." << endl;
+                int columnIndex = this->getColumnIndex(columnName);
+                Cursor cursor = this->getCursor();
+                vector<int> row = cursor.getNext();
+                int rowCounter = 0;
+                
+                while (!row.empty()) {
+                    if (columnIndex < row.size()) {
+                        int rowValue = row[columnIndex];
+                        if (evaluateBinOp(rowValue, value, op)) {
+                            matchingRows.push_back(rowCounter);
+                        }
+                    }
+                    row = cursor.getNext();
+                    rowCounter++;
+                }
+            }
+        } else {
+            // Fall back to the old index implementation
+            cout << "Using legacy index for search" << endl;
+            
+            string indexTableName = this->tableName + "_" + columnName + "_index";
+            Table* indexTable = tableCatalogue.getTable(indexTableName);
+            
+            if (!indexTable) {
+                cout << "Error: Index table not found" << endl;
+                return matchingRows;
+            }
+            
+            // Load all index data into memory
+            vector<pair<int, int>> indexData;
+            try {
+                Cursor cursor = indexTable->getCursor();
+                vector<int> indexRow = cursor.getNext();
+                
+                while (!indexRow.empty()) {
+                    if (indexRow.size() >= 2) {
+                        indexData.push_back(make_pair(indexRow[0], indexRow[1]));
+                    }
+                    indexRow = cursor.getNext();
+                }
+            } catch (const exception& e) {
+                cout << "ERROR: Exception while loading index data: " << e.what() << endl;
+                return matchingRows;
+            }
+            
+            // Sort the index data by value (should already be sorted, but just to be safe)
+            sort(indexData.begin(), indexData.end());
+            
+            // For EQUAL operator, we can use binary search for better performance
+            if (op == EQUAL) {
+                // Perform binary search
+                int left = 0;
+                int right = indexData.size() - 1;
+                
+                while (left <= right) {
+                    int mid = left + (right - left) / 2;
+                    int midValue = indexData[mid].first;
+                    
+                    if (midValue == value) {
+                        // Found a match, add it to the result
+                        matchingRows.push_back(indexData[mid].second);
+                        
+                        // Check for more matches to the left
+                        int leftPtr = mid - 1;
+                        while (leftPtr >= 0 && indexData[leftPtr].first == value) {
+                            matchingRows.push_back(indexData[leftPtr].second);
+                            leftPtr--;
+                        }
+                        
+                        // Check for more matches to the right
+                        int rightPtr = mid + 1;
+                        while (rightPtr < indexData.size() && indexData[rightPtr].first == value) {
+                            matchingRows.push_back(indexData[rightPtr].second);
+                            rightPtr++;
+                        }
+                        
+                        break;
+                    } else if (midValue < value) {
+                        left = mid + 1;
+                    } else {
+                        right = mid - 1;
+                    }
+                }
+            } else {
+                // For other operators, we need to scan the index
+                for (const auto& entry : indexData) {
+                    int indexValue = entry.first;
+                    int rowNumber = entry.second;
+                    
+                    if (evaluateBinOp(indexValue, value, op)) {
+                        matchingRows.push_back(rowNumber);
+                    }
+                    
+                    // Optimization: If we've passed the value for certain operators, we can stop
+                    if ((op == LESS_THAN || op == LEQ) && indexValue > value) {
+                        break;
+                    }
                 }
             }
         }
@@ -305,8 +572,21 @@ vector<int> Table::searchIndexed(string columnName, int value, BinaryOperator op
 bool Table::isIndexed(string columnName) {
     logger.log("Table::isIndexed");
     
-    bool result = this->indexed && this->indexedColumn == columnName;
-    return result;
+    cout << "DEBUG: Checking if table " << this->tableName << " is indexed on column " << columnName << endl;
+    
+    // First check in our indices map
+    auto it = indices.find(columnName);
+    if (it != indices.end() && it->second != nullptr) {
+        cout << "DEBUG: Found index for column " << columnName << " in indices map" << endl;
+        return true;
+    }
+    
+    // For backward compatibility, also check the legacy fields
+    bool legacyResult = this->indexed && this->indexedColumn == columnName;
+    
+    cout << "DEBUG: Legacy index check result: " << (legacyResult ? "YES" : "NO") << endl;
+    
+    return legacyResult || (it != indices.end());
 }
 
 /**
@@ -1078,11 +1358,23 @@ void Table::unload()
 {
     logger.log("Table::~unload");
     
-    // Clean up the B+ tree index if it exists
-    if (bPlusTreeIndex != nullptr) {
-        delete bPlusTreeIndex;
-        bPlusTreeIndex = nullptr;
+    // We don't delete bPlusTreeIndex here because it's just a pointer to an index
+    // in the indices map, which will be cleaned up in the destructor
+    bPlusTreeIndex = nullptr;
+    
+    // Clean up all indices in the map
+    for (auto& pair : indices) {
+        if (pair.second != nullptr) {
+            if (pair.second->bPlusTreeIndex != nullptr) {
+                delete pair.second->bPlusTreeIndex;
+                pair.second->bPlusTreeIndex = nullptr;
+            }
+            delete pair.second;
+            pair.second = nullptr;
+        }
     }
+    
+    indices.clear();
     
     for (int pageCounter = 0; pageCounter < this->blockCount; pageCounter++)
         bufferManager.deleteFile(this->tableName, pageCounter);

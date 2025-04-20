@@ -18,9 +18,24 @@ enum IndexingStrategy
  * JOIN, SORT, CROSS and DISTINCT).
  *
  */
+// Structure to hold index information
+struct IndexInfo {
+    string columnName;
+    IndexingStrategy strategy;
+    BPlusTree* bPlusTreeIndex;
+    
+    IndexInfo(string colName, IndexingStrategy strat, BPlusTree* index = nullptr) 
+        : columnName(colName), strategy(strat), bPlusTreeIndex(index) {}
+};
+
 class Table
 {
     vector<unordered_set<int>> distinctValuesInColumns;
+    
+    // Map to store multiple indices (column name -> index info)
+    unordered_map<string, IndexInfo*> indices;
+    
+    // Keep this for backward compatibility
     BPlusTree* bPlusTreeIndex = nullptr;
 
 public:
@@ -33,6 +48,8 @@ public:
     uint blockCount = 0;
     uint maxRowsPerBlock = 0;
     vector<uint> rowsPerBlockCount;
+    
+    // Keep these for backward compatibility
     bool indexed = false;
     string indexedColumn = "";
     IndexingStrategy indexingStrategy = NOTHING;
