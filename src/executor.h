@@ -25,6 +25,7 @@ void executeCROSSTRANSPOSE();
 void executeCHECKANTISYM();
 void executeORDER_BY();
 void executeSEARCH();
+void executeINSERT();
 
 bool evaluateBinOp(int value1, int value2, BinaryOperator binaryOperator);
 void printRowCount(int rowCount);

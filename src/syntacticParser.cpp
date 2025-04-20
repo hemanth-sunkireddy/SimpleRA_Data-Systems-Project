@@ -59,6 +59,8 @@ bool syntacticParse()
         return syntacticParseGROUP_BY();
     else if (tokenizedQuery[2] == "ORDER" && tokenizedQuery[3] == "BY")
         return syntacticParseORDERBY();
+    else if(tokenizedQuery[0] == "INSERT")
+        return syntaticParseInsert();
     else
     {
         string resultantRelationName = possibleQueryType;

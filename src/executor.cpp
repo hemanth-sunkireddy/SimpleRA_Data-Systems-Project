@@ -26,6 +26,7 @@ void executeCommand(){
         case ROTATE_MATRIX: executeROTATE_MATRIX(); break;
         case CROSSTRANSPOSE: executeCROSSTRANSPOSE(); break;
         case CHECKANTISYM: executeCHECKANTISYM(); break;
+        case INSERT: executeINSERT(); break;
         default: cout<<"PARSING ERROR"<<endl;
     }
 

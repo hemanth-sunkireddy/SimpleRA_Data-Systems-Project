@@ -25,3 +25,4 @@ bool semanticParseCHECKANTISYM();
 bool semanticParseGROUP_BY();
 bool semanticParseORDERBY();
 bool semanticParseSEARCH();
+bool semanticParseInsert();

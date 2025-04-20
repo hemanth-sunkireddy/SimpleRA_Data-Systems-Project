@@ -26,6 +26,7 @@ bool semanticParse(){
         case ROTATE_MATRIX: return semanticParseROTATE_MATRIX();
         case CROSSTRANSPOSE: return semanticParseCROSSTRANSPOSE();
         case CHECKANTISYM: return semanticParseCHECKANTISYM();
+        case INSERT: return semanticParseInsert();
         default: cout<<"SEMANTIC ERROR"<<endl;
     }
 

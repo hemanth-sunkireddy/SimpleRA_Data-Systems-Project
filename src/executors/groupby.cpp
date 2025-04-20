@@ -178,3 +178,42 @@ void executeORDER_BY() {
     table->orderBy();
     parsedQuery.clear();
 }
+
+
+
+bool syntaticParseInsert()
+{
+    logger.log("syntacticParseINSERT()");
+    cout << "INSERT OPERATION" << endl;
+
+    if(tokenizedQuery.size()!=4){
+        cout<<"SYNATX ERROR: PLEASE GIVE 4 Arguments in this format: INSERT INTO table_name (values)"<<endl;
+        return false;
+    }
+    parsedQuery.queryType = INSERT;
+    parsedQuery.loadRelationName = tokenizedQuery[2];
+    if(tokenizedQuery[1] != "INTO"){
+        cout << "SYNTAX ERROR: Please make sure 2nd argument is INTO" << endl;
+    }
+    return true;
+}
+
+bool semanticParseInsert(){
+    logger.log("semanticParseINSERT");
+    if(tableCatalogue.isTable(parsedQuery.loadRelationName)){
+    }
+    else{
+        cout<<"SEMANTIC ERROR: Table not exist"<<endl;
+        return false;
+    }
+    return true;
+}
+
+
+
+
+void executeINSERT() {
+    logger.log("executeGROUPBY");
+    cout << "EXECUTING INSERT OPERATION" << endl;
+    cout << "Will Implement this operation soon...." << endl;
+}

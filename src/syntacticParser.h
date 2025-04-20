@@ -27,6 +27,7 @@ enum QueryType
     CROSSTRANSPOSE,
     ROTATE_MATRIX,
     CHECKANTISYM,
+    INSERT,
     SEARCH,
     UNDETERMINED
 };
@@ -169,6 +170,7 @@ bool syntacticParseROTATE_MATRIX();
 bool syntacticParseCHECKANTISYM();
 bool syntacticParseGROUP_BY();
 bool syntacticParseORDERBY();
+bool syntaticParseInsert();
 bool syntacticParseSEARCH();
 
 bool isFileExists(string tableName);
