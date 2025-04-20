@@ -15,7 +15,7 @@ BufferManager bufferManager;
 
 void doCommand()
 {
-    logger.log("doCommand");
+    // logger.log("doCommand");
     if (syntacticParse() && semanticParse())
         executeCommand();
     return;
@@ -37,7 +37,7 @@ void execute_line(string line, regex delim, int* quit_flag){
     }
 
     if (tokenizedQuery.empty()){
-        cout << "Tokenized Query: ";
+        // cout << "Tokenized Query: ";
         return;
     }
 
@@ -51,7 +51,6 @@ void execute_line(string line, regex delim, int* quit_flag){
 
 int main(void)
 {
-
     regex delim("[^\\s,]+");
     string command;
     system("rm -rf ../data/temp");
@@ -64,9 +63,9 @@ int main(void)
         cout << "\n> ";
         tokenizedQuery.clear();
         parsedQuery.clear();
-        logger.log("\nReading New Command: ");
+        // logger.log("\nReading New Command: ");
         getline(cin, command);
-        logger.log(command);
+        // logger.log(command);
 
         auto words_begin = std::sregex_iterator(command.begin(), command.end(), delim);
         auto words_end = std::sregex_iterator();

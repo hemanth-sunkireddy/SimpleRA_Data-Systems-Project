@@ -4,18 +4,18 @@
  * @brief Destructor for Table class
  */
 Table::~Table() {
-    cout << "DEBUG: Table destructor called for " << this->tableName << endl;
+    // cout << "DEBUG: Table destructor called for " << this->tableName << endl;
     
     // First, set the legacy bPlusTreeIndex to nullptr to avoid double deletion
     // since it points to the same object as one of the indices
     bPlusTreeIndex = nullptr;
     
     // Clean up all indices in the map
-    cout << "DEBUG: Cleaning up " << indices.size() << " indices" << endl;
+    // cout << "DEBUG: Cleaning up " << indices.size() << " indices" << endl;
     for (auto& pair : indices) {
         if (pair.second != nullptr) {
             if (pair.second->bPlusTreeIndex != nullptr) {
-                cout << "DEBUG: Deleting B+ tree index for column " << pair.first << endl;
+                // cout << "DEBUG: Deleting B+ tree index for column " << pair.first << endl;
                 delete pair.second->bPlusTreeIndex;
                 pair.second->bPlusTreeIndex = nullptr;
             }
@@ -25,7 +25,7 @@ Table::~Table() {
     }
     
     indices.clear();
-    cout << "DEBUG: Table destructor completed for " << this->tableName << endl;
+    // cout << "DEBUG: Table destructor completed for " << this->tableName << endl;
 }
 
 /**
@@ -49,7 +49,7 @@ bool Table::buildIndex(string columnName) {
     
     // Load all pages into memory before starting to build the index
     // This helps prevent page eviction issues during index building
-    cout << "DEBUG: Pre-loading table pages into memory" << endl;
+    // cout << "DEBUG: Pre-loading table pages into memory" << endl;
     try {
         // Create a cursor to iterate through the table
         Cursor cursor = this->getCursor();
@@ -60,18 +60,18 @@ bool Table::buildIndex(string columnName) {
             row = cursor.getNext();
         }
         
-        cout << "DEBUG: Pre-loaded all table pages into memory" << endl;
+        // cout << "DEBUG: Pre-loaded all table pages into memory" << endl;
     } catch (const exception& e) {
         cout << "WARNING: Exception during page pre-loading: " << e.what() << endl;
         // Continue anyway, this is just an optimization
     }
     
-    cout << "DEBUG: Checking if index already exists for column " << columnName << endl;
+    // cout << "DEBUG: Checking if index already exists for column " << columnName << endl;
     
     // Check if we already have an index on this column in our map
     auto it = indices.find(columnName);
     if (it != indices.end()) {
-        cout << "DEBUG: Found existing index for column " << columnName << endl;
+        // cout << "DEBUG: Found existing index for column " << columnName << endl;
         
         // We already have an index for this column
         IndexInfo* indexInfo = it->second;
@@ -96,9 +96,9 @@ bool Table::buildIndex(string columnName) {
                 // Try to load the existing index from disk
                 cout << "Loading existing B+ tree index from disk..." << endl;
                 try {
-                    cout << "DEBUG: Creating new BPlusTree object for " << this->tableName << "." << columnName << endl;
+                    // cout << "DEBUG: Creating new BPlusTree object for " << this->tableName << "." << columnName << endl;
                     indexInfo->bPlusTreeIndex = new BPlusTree(4, this->tableName, columnName);
-                    cout << "DEBUG: BPlusTree object created successfully" << endl;
+                    // cout << "DEBUG: BPlusTree object created successfully" << endl;
                     
                     if (indexInfo->bPlusTreeIndex->loadFromDisk()) {
                         cout << "Successfully loaded B+ tree index from disk" << endl;
@@ -128,18 +128,18 @@ bool Table::buildIndex(string columnName) {
             }
         }
     } else {
-        cout << "DEBUG: No existing index found for column " << columnName << endl;
+        // cout << "DEBUG: No existing index found for column " << columnName << endl;
         
         // Create a new index info object
         IndexInfo* newIndexInfo = new IndexInfo(columnName, BTREE);
         indices[columnName] = newIndexInfo;
-        cout << "DEBUG: Created new index info for column " << columnName << endl;
+        // cout << "DEBUG: Created new index info for column " << columnName << endl;
     }
     
     // Get the column index
-    cout << "DEBUG: Getting column index for " << columnName << " in table " << this->tableName << endl;
+    // cout << "DEBUG: Getting column index for " << columnName << " in table " << this->tableName << endl;
     int columnIndex = this->getColumnIndex(columnName);
-    cout << "DEBUG: Column index is " << columnIndex << endl;
+    // cout << "DEBUG: Column index is " << columnIndex << endl;
     
     try {
         // Get the index info (either existing or newly created)
@@ -147,24 +147,24 @@ bool Table::buildIndex(string columnName) {
         
         // Clean up any existing B+ tree index
         if (indexInfo->bPlusTreeIndex != nullptr) {
-            cout << "DEBUG: Cleaning up existing B+ tree index for column " << columnName << endl;
+            // cout << "DEBUG: Cleaning up existing B+ tree index for column " << columnName << endl;
             delete indexInfo->bPlusTreeIndex;
             indexInfo->bPlusTreeIndex = nullptr;
         }
         
         // Create a new B+ tree index (order = 4 for simplicity, can be adjusted)
-        cout << "DEBUG: Creating new BPlusTree object for " << this->tableName << "." << columnName << endl;
+        // cout << "DEBUG: Creating new BPlusTree object for " << this->tableName << "." << columnName << endl;
         indexInfo->bPlusTreeIndex = new BPlusTree(4, this->tableName, columnName);
-        cout << "DEBUG: BPlusTree object created successfully" << endl;
+        // cout << "DEBUG: BPlusTree object created successfully" << endl;
         
         // Create a cursor to iterate through the table
-        cout << "DEBUG: Creating cursor to iterate through table" << endl;
+        // cout << "DEBUG: Creating cursor to iterate through table" << endl;
         Cursor cursor = this->getCursor();
         vector<int> row = cursor.getNext();
         int rowCounter = 0;
         
         // For each row, extract the value of the indexed column and insert it into the B+ tree
-        cout << "DEBUG: Starting to process rows for B+ tree index" << endl;
+        // cout << "DEBUG: Starting to process rows for B+ tree index" << endl;
         while (!row.empty()) {
             if (columnIndex >= row.size()) {
                 cout << "ERROR: Column index " << columnIndex << " is out of bounds for row with size " << row.size() << endl;
@@ -177,7 +177,7 @@ bool Table::buildIndex(string columnName) {
                 int value = row[columnIndex];
                 
                 // Insert the value and row number into the B+ tree
-                cout << "DEBUG: Inserting value " << value << " at row " << rowCounter << " into B+ tree" << endl;
+                // cout << "DEBUG: Inserting value " << value << " at row " << rowCounter << " into B+ tree" << endl;
                 indexInfo->bPlusTreeIndex->insert(value, rowCounter);
                 
                 row = cursor.getNext();
@@ -185,7 +185,7 @@ bool Table::buildIndex(string columnName) {
                 
                 // Print progress every 100 rows
                 if (rowCounter % 100 == 0) {
-                    cout << "DEBUG: Processed " << rowCounter << " rows so far" << endl;
+                    // cout << "DEBUG: Processed " << rowCounter << " rows so far" << endl;
                 }
             } catch (const exception& e) {
                 cout << "ERROR: Exception while inserting into B+ tree: " << e.what() << endl;
@@ -199,7 +199,7 @@ bool Table::buildIndex(string columnName) {
         cout << "Processed " << rowCounter << " rows for B+ tree index" << endl;
         
         // Save the B+ tree to disk
-        cout << "DEBUG: Saving B+ tree to disk" << endl;
+        // cout << "DEBUG: Saving B+ tree to disk" << endl;
         if (indexInfo->bPlusTreeIndex->saveToDisk()) {
             // Update the index info
             indexInfo->strategy = BTREE;
@@ -212,7 +212,7 @@ bool Table::buildIndex(string columnName) {
             this->bPlusTreeIndex = indexInfo->bPlusTreeIndex;
             
             cout << "B+ tree index built successfully on " << this->tableName << "." << columnName << endl;
-            cout << "DEBUG: Table now has " << indices.size() << " indices" << endl;
+            // cout << "DEBUG: Table now has " << indices.size() << " indices" << endl;
             
             // Unmark this table as being indexed
             bufferManager.unmarkTableAsBeingIndexed(this->tableName);
@@ -276,7 +276,7 @@ vector<int> Table::searchIndexed(string columnName, int value, BinaryOperator op
             try {
                 // If the B+ tree index is not loaded, load it
                 if (indexInfo->bPlusTreeIndex == nullptr) {
-                    cout << "DEBUG: Loading B+ tree index from disk for column " << columnName << endl;
+                    // cout << "DEBUG: Loading B+ tree index from disk for column " << columnName << endl;
                     indexInfo->bPlusTreeIndex = new BPlusTree(4, this->tableName, columnName);
                     
                     if (!indexInfo->bPlusTreeIndex->loadFromDisk()) {
@@ -417,7 +417,7 @@ vector<int> Table::searchIndexed(string columnName, int value, BinaryOperator op
         }
     } else if (this->indexed && this->indexedColumn == columnName) {
         // For backward compatibility, use the legacy fields
-        cout << "DEBUG: Using legacy index fields for column " << columnName << endl;
+        // cout << "DEBUG: Using legacy index fields for column " << columnName << endl;
         
         // Check if we have a B+ tree index
         if (this->indexingStrategy == BTREE) {
@@ -572,19 +572,19 @@ vector<int> Table::searchIndexed(string columnName, int value, BinaryOperator op
 bool Table::isIndexed(string columnName) {
     logger.log("Table::isIndexed");
     
-    cout << "DEBUG: Checking if table " << this->tableName << " is indexed on column " << columnName << endl;
+    // cout << "DEBUG: Checking if table " << this->tableName << " is indexed on column " << columnName << endl;
     
     // First check in our indices map
     auto it = indices.find(columnName);
     if (it != indices.end() && it->second != nullptr) {
-        cout << "DEBUG: Found index for column " << columnName << " in indices map" << endl;
+        // cout << "DEBUG: Found index for column " << columnName << " in indices map" << endl;
         return true;
     }
     
     // For backward compatibility, also check the legacy fields
     bool legacyResult = this->indexed && this->indexedColumn == columnName;
     
-    cout << "DEBUG: Legacy index check result: " << (legacyResult ? "YES" : "NO") << endl;
+    // cout << "DEBUG: Legacy index check result: " << (legacyResult ? "YES" : "NO") << endl;
     
     return legacyResult || (it != indices.end());
 }
@@ -697,7 +697,7 @@ Table::Table(string tableName, vector<string> columns)
     string tempDir = "../data/temp";
     struct stat info;
     if (stat(tempDir.c_str(), &info) != 0 || !(info.st_mode & S_IFDIR)) {
-        cout << "DEBUG: Creating temp directory: " << tempDir << endl;
+        // cout << "DEBUG: Creating temp directory: " << tempDir << endl;
         system(("mkdir -p " + tempDir).c_str());
     }
     
@@ -1089,8 +1089,8 @@ void Matrix::updateStatistics(vector<int> row)
 bool Table::isColumn(string columnName)
 {
     logger.log("Table::isColumn");
-    cout << "DEBUG: Checking if column " << columnName << " exists in table " << this->tableName << endl;
-    cout << "DEBUG: Table has " << this->columnCount << " columns: ";
+    // cout << "DEBUG: Checking if column " << columnName << " exists in table " << this->tableName << endl;
+    // cout << "DEBUG: Table has " << this->columnCount << " columns: ";
     for (int i = 0; i < this->columnCount; i++) {
         cout << this->columns[i];
         if (i < this->columnCount - 1) cout << ", ";
@@ -1101,12 +1101,12 @@ bool Table::isColumn(string columnName)
     {
         if (col == columnName)
         {
-            cout << "DEBUG: Column " << columnName << " found in table " << this->tableName << endl;
+            // cout << "DEBUG: Column " << columnName << " found in table " << this->tableName << endl;
             return true;
         }
     }
     
-    cout << "DEBUG: Column " << columnName << " NOT found in table " << this->tableName << endl;
+    // cout << "DEBUG: Column " << columnName << " NOT found in table " << this->tableName << endl;
     return false;
 }
 
@@ -1411,8 +1411,8 @@ Cursor Table::getCursor()
 int Table::getColumnIndex(string columnName)
 {
     logger.log("Table::getColumnIndex");
-    cout << "DEBUG: Getting column index for " << columnName << " in table " << this->tableName << endl;
-    cout << "DEBUG: Table has " << this->columnCount << " columns: ";
+    // cout << "DEBUG: Getting column index for " << columnName << " in table " << this->tableName << endl;
+    // cout << "DEBUG: Table has " << this->columnCount << " columns: ";
     for (int i = 0; i < this->columnCount; i++) {
         cout << this->columns[i];
         if (i < this->columnCount - 1) cout << ", ";
@@ -1422,7 +1422,7 @@ int Table::getColumnIndex(string columnName)
     for (int columnCounter = 0; columnCounter < this->columnCount; columnCounter++)
     {
         if (this->columns[columnCounter] == columnName) {
-            cout << "DEBUG: Found column " << columnName << " at index " << columnCounter << endl;
+            // cout << "DEBUG: Found column " << columnName << " at index " << columnCounter << endl;
             return columnCounter;
         }
     }

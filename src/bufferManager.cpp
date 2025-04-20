@@ -15,7 +15,7 @@ BufferManager::BufferManager()
 void BufferManager::markTableAsBeingIndexed(string tableName)
 {
     logger.log("BufferManager::markTableAsBeingIndexed");
-    cout << "DEBUG: Marking table " << tableName << " as being indexed" << endl;
+    // cout << "DEBUG: Marking table " << tableName << " as being indexed" << endl;
     tablesBeingIndexed.insert(tableName);
 }
 
@@ -27,7 +27,7 @@ void BufferManager::markTableAsBeingIndexed(string tableName)
 void BufferManager::unmarkTableAsBeingIndexed(string tableName)
 {
     logger.log("BufferManager::unmarkTableAsBeingIndexed");
-    cout << "DEBUG: Unmarking table " << tableName << " as being indexed" << endl;
+    // cout << "DEBUG: Unmarking table " << tableName << " as being indexed" << endl;
     tablesBeingIndexed.erase(tableName);
 }
 
@@ -60,13 +60,13 @@ Page BufferManager::getPage(string tableName, int pageIndex)
     
     string pageName = "../data/temp/" + tableName + "_Page" + to_string(pageIndex);
     
-    cout << "DEBUG: BufferManager::getPage - Requesting page: " << pageName << endl;
-    cout << "DEBUG: Current buffer size: " << this->pages.size() << "/" << BLOCK_COUNT << endl;
+    // cout << "DEBUG: BufferManager::getPage - Requesting page: " << pageName << endl;
+    // cout << "DEBUG: Current buffer size: " << this->pages.size() << "/" << BLOCK_COUNT << endl;
     
     // Check if page exists in pool
     for (auto& page : this->pages) {
         if (page.pageName == pageName) {
-            cout << "DEBUG: Page found in buffer pool: " << pageName << endl;
+            // cout << "DEBUG: Page found in buffer pool: " << pageName << endl;
             // Move the page to the end of the deque to mark it as recently used
             Page foundPage = page;
             // We'll move it to the end later after removing it
@@ -74,7 +74,7 @@ Page BufferManager::getPage(string tableName, int pageIndex)
         }
     }
     
-    cout << "DEBUG: Page not found in buffer pool, creating new page: " << pageName << endl;
+    // cout << "DEBUG: Page not found in buffer pool, creating new page: " << pageName << endl;
     
     // If not in pool, create new page and add to pool
     try {
@@ -97,10 +97,10 @@ Page BufferManager::getPage(string tableName, int pageIndex)
             // Check if the table is currently being indexed
             bool isTableBeingIndexed = this->isTableBeingIndexed(frontPageTableName);
             
-            cout << "DEBUG: Buffer full, need to evict a page" << endl;
-            cout << "DEBUG: Oldest page is: " << frontPageName << endl;
-            cout << "DEBUG: Is index page: " << (isIndexPage ? "YES" : "NO") << endl;
-            cout << "DEBUG: Is from table being indexed: " << (isTableBeingIndexed ? "YES" : "NO") << endl;
+            // cout << "DEBUG: Buffer full, need to evict a page" << endl;
+            // cout << "DEBUG: Oldest page is: " << frontPageName << endl;
+            // cout << "DEBUG: Is index page: " << (isIndexPage ? "YES" : "NO") << endl;
+            // cout << "DEBUG: Is from table being indexed: " << (isTableBeingIndexed ? "YES" : "NO") << endl;
             
             // If it's an index page or from a table being indexed, try to find a page to evict that is neither
             if (isIndexPage || isTableBeingIndexed) {
@@ -124,7 +124,7 @@ Page BufferManager::getPage(string tableName, int pageIndex)
                     
                     // If this page is neither an index page nor from a table being indexed, evict it
                     if (!isCurrentIndexPage && !isCurrentTableBeingIndexed) {
-                        cout << "DEBUG: Found page to evict: " << currentPageName << endl;
+                        // cout << "DEBUG: Found page to evict: " << currentPageName << endl;
                         this->pages.erase(it);
                         foundPageToEvict = true;
                         break;
@@ -150,7 +150,7 @@ Page BufferManager::getPage(string tableName, int pageIndex)
                         
                         // If this page is not from a table being indexed, evict it
                         if (!isCurrentTableBeingIndexed) {
-                            cout << "DEBUG: Found page not from table being indexed to evict: " << currentPageName << endl;
+                            // cout << "DEBUG: Found page not from table being indexed to evict: " << currentPageName << endl;
                             this->pages.erase(it);
                             foundPageToEvict = true;
                             break;
@@ -160,20 +160,20 @@ Page BufferManager::getPage(string tableName, int pageIndex)
                     // If we still couldn't find a page to evict, we have to remove the oldest page
                     // even if it's an index page or from a table being indexed
                     if (!foundPageToEvict) {
-                        cout << "DEBUG: No suitable pages found to evict, evicting oldest page: " << frontPageName << endl;
+                        // cout << "DEBUG: No suitable pages found to evict, evicting oldest page: " << frontPageName << endl;
                         this->pages.pop_front();
                     }
                 }
             } else {
                 // Not an index page and not from a table being indexed, just remove the oldest page
-                cout << "DEBUG: Evicting oldest page: " << frontPageName << endl;
+                // cout << "DEBUG: Evicting oldest page: " << frontPageName << endl;
                 this->pages.pop_front();
             }
         }
         
         this->pages.push_back(newPage);
-        cout << "DEBUG: Added new page to buffer pool: " << pageName << endl;
-        cout << "DEBUG: New buffer size: " << this->pages.size() << "/" << BLOCK_COUNT << endl;
+        // cout << "DEBUG: Added new page to buffer pool: " << pageName << endl;
+        // cout << "DEBUG: New buffer size: " << this->pages.size() << "/" << BLOCK_COUNT << endl;
         return newPage;
     } catch (const exception& e) {
         cerr << "ERROR: Error creating page: " << e.what() << endl;
