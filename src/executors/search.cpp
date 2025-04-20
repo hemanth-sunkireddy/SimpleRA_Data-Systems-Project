@@ -103,7 +103,12 @@ void executeSEARCH()
     
     if (useIndex)
     {
-        cout << "Using existing index on " << parsedQuery.searchRelationName << "." << parsedQuery.searchColumnName << endl;
+        // Check if the index is a B+ tree
+        if (table->indexingStrategy == BTREE) {
+            cout << "Using existing B+ tree index on " << parsedQuery.searchRelationName << "." << parsedQuery.searchColumnName << endl;
+        } else {
+            cout << "Using existing index on " << parsedQuery.searchRelationName << "." << parsedQuery.searchColumnName << endl;
+        }
         
         // Get matching row numbers from the index
         matchingRows = table->searchIndexed(parsedQuery.searchColumnName, parsedQuery.searchIntLiteral, parsedQuery.searchBinaryOperator);
@@ -135,16 +140,18 @@ void executeSEARCH()
     }
     else
     {
-        cout << "No index found on " << parsedQuery.searchColumnName << ", creating new index..." << endl;
+        cout << "No index found on " << parsedQuery.searchColumnName << ", creating new B+ tree index..." << endl;
         
-        // Create a new index for this search
-        if (table->buildIndex(parsedQuery.searchColumnName)) {
+        // Create a new B+ tree index for this search
+        bool indexCreated = table->buildIndex(parsedQuery.searchColumnName);
+        
+        if (indexCreated) {
             // Get matching row numbers from the index
             matchingRows = table->searchIndexed(parsedQuery.searchColumnName, parsedQuery.searchIntLiteral, parsedQuery.searchBinaryOperator);
             rowsMatched = matchingRows.size();
             
             if (rowsMatched > 0) {
-                cout << "Found " << rowsMatched << " matching rows using newly created index" << endl;
+                cout << "Found " << rowsMatched << " matching rows using newly created B+ tree index" << endl;
                 
                 // Retrieve the actual rows
                 for (int rowNum : matchingRows)
@@ -167,18 +174,21 @@ void executeSEARCH()
                 cout << "No matching rows found" << endl;
             }
         } else {
-            cout << "Failed to create index, falling back to sequential scan" << endl;
+            cout << "Failed to create B+ tree index, falling back to sequential scan" << endl;
             
             // Fallback to sequential scan
             int columnIndex = table->getColumnIndex(parsedQuery.searchColumnName);
+            cout << "Doing sequential scan on " << parsedQuery.searchRelationName << endl;
             Cursor cursor = table->getCursor();
             vector<int> row = cursor.getNext();
             
             while (!row.empty()) {
-                int value = row[columnIndex];
-                if (evaluateBinOp(value, parsedQuery.searchIntLiteral, parsedQuery.searchBinaryOperator)) {
-                    resultantTable->writeRow<int>(row);
-                    rowsMatched++;
+                if (columnIndex < row.size()) {
+                    int value = row[columnIndex];
+                    if (evaluateBinOp(value, parsedQuery.searchIntLiteral, parsedQuery.searchBinaryOperator)) {
+                        resultantTable->writeRow<int>(row);
+                        rowsMatched++;
+                    }
                 }
                 row = cursor.getNext();
             }

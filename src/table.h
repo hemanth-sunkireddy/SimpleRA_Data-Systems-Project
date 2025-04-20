@@ -1,5 +1,6 @@
 #include "cursor.h"
 #include "enums.h"
+#include "bplustree.h"
 
 enum IndexingStrategy
 {
@@ -20,6 +21,7 @@ enum IndexingStrategy
 class Table
 {
     vector<unordered_set<int>> distinctValuesInColumns;
+    BPlusTree* bPlusTreeIndex = nullptr;
 
 public:
     string sourceFileName = "";
@@ -42,6 +44,7 @@ public:
     Table(string tableName);
     Table(string tableName, vector<string> columns);
     Table(string tableName, vector<string> columns, bool ORDER_BY_OPERATION, int block_count);
+    ~Table();
     bool load();
     bool isColumn(string columnName);
     void renameColumn(string fromColumnName, string toColumnName);
