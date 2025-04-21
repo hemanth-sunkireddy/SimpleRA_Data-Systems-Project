@@ -521,16 +521,19 @@ public:
             this->tableName = tableName;
             this->columnName = columnName;
             
-            // Make sure the data directory exists
-            string dataDir = "../data/";
-            ifstream dirCheck(dataDir);
-            if (!dirCheck) {
-                cout << "WARNING: Data directory not found: " << dataDir << endl;
-                // Create a minimal root node
+            // Make sure the data/temp directory exists
+            string dataDir = "../data/temp/";
+            
+            // Create the directory if it doesn't exist
+            system("mkdir -p ../data/temp");
+            
+            // Set the index file path to be in the data/temp directory
+            this->indexFileName = dataDir + tableName + "_" + columnName + "_bptree.idx";
+            
+            // Create a minimal root node if needed
+            if (!this->root) {
                 this->root = new BPlusTreeNode(true);
             }
-            
-            this->indexFileName = dataDir + tableName + "_" + columnName + "_bptree.idx";
             
             // cout << "DEBUG: BPlusTree constructor completed successfully for " << tableName << "." << columnName << endl;
         } catch (const exception& e) {
