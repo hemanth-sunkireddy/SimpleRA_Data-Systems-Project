@@ -145,6 +145,7 @@ public:
 
     ParsedQuery();
     void clear();
+    unordered_map<string, string> insertKeyValue;
 };
 
 bool syntacticParse();

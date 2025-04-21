@@ -78,6 +78,7 @@ public:
     void deleteTable();
     void joinTables();
     void orderBy();
+    void insertRow(const vector<string>& row);
     
     // Index related functions
     bool buildIndex(string columnName);

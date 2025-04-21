@@ -1,4 +1,11 @@
 #include "global.h"
+#include <cctype>  // for isdigit
+#include <string>
+#include <iostream>
+#include <typeinfo>
+#include <cctype>  // for isdigit
+#include <string>
+#include <iostream>
 
 /**
  * @brief Destructor for Table class
@@ -1943,3 +1950,102 @@ void Table::orderBy()
     cout << "ORDER BY COMPLETED" << endl;
     logger.log("Table::orderBy - End");
 }
+
+
+
+// Helper function to check if a string represents a valid integer
+bool isInteger(const std::string& str) {
+    // Check if the string is empty
+    if (str.empty()) return false;
+
+    // Handle negative numbers
+    size_t start = 0;
+    if (str[0] == '-') {
+        start = 1;
+        if (str.size() == 1) return false;  // A negative sign alone is not a number
+    }
+
+    // Check if all characters (except the optional negative sign) are digits
+    for (size_t i = start; i < str.size(); ++i) {
+        if (!isdigit(str[i])) {
+            return false;  // Non-digit character found
+        }
+    }
+
+    return true;
+}
+
+void Table::insertRow(const vector<string>& rowStrVec) {
+    logger.log("Table::insertRow");
+
+    vector<int> row;
+    for (auto val : rowStrVec) {
+        if (val.empty()) {
+            row.push_back(0);
+        } else {
+            try {
+                int intVal = stoi(val);
+                row.push_back(intVal);
+            } catch (...) {
+                row.push_back(0);
+            }
+        }
+    }
+
+    // Print inserted row for confirmation
+    for (auto ro : row) cout << ro << " ";
+    cout << endl;
+
+    // Update rowCount
+    this->rowCount++;
+
+    // If no blocks exist, initialize one
+    if (this->rowsPerBlockCount.empty()) {
+        this->rowsPerBlockCount.push_back(0);
+        this->blockCount = 1;
+    }
+
+    int lastBlockIndex = this->blockCount - 1;
+    int rowsInLastBlock = this->rowsPerBlockCount[lastBlockIndex];
+
+    vector<vector<int>> pageData;
+
+    // Load existing data if last block is not full
+    if (rowsInLastBlock < this->maxRowsPerBlock) {
+        Page page = bufferManager.getPage(this->tableName, lastBlockIndex);
+        pageData = page.getAllRows();
+    }
+    cout << "ROW SIZE: " << row.size() << endl;
+    cout << "PAGE DATA SIZE: " << pageData.size() <<endl;
+    int validRows = this->rowsPerBlockCount[lastBlockIndex];
+    cout << "VALID ROWS: " << validRows << endl;
+    rowsInLastBlock++;
+    
+    if ((int)pageData.size() > validRows) {
+        pageData.resize(validRows);
+    }
+    if (rowsInLastBlock > this->maxRowsPerBlock) {
+        // Current block full, create new block
+        this->rowsPerBlockCount.push_back(1);
+        this->blockCount++;
+        vector<vector<int>> newPageData = {row};
+        bufferManager.writePage(this->tableName, lastBlockIndex + 1, newPageData, 1);
+    } else {
+        Page page = bufferManager.getPage(this->tableName, lastBlockIndex);
+        vector<vector<int>> pageData = page.getAllRows();
+        if ((int)pageData.size() > validRows) {
+            pageData.resize(validRows + 1);
+        }
+        pageData[validRows] = row;
+        for (const auto &r : pageData) {
+            for (int v : r) cout << v << " ";
+            cout << "\n";
+        }
+        bufferManager.writePage(this->tableName, lastBlockIndex, pageData, validRows + 1);
+    }
+
+    cout << "INSERTION SUCCESS" << endl;
+    this->makePermanent();
+    this->updateStatistics(row);
+}
+

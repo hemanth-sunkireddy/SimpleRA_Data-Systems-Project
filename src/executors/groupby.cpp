@@ -185,35 +185,76 @@ bool syntaticParseInsert()
 {
     logger.log("syntacticParseINSERT()");
     cout << "INSERT OPERATION" << endl;
+    // if (tokenizedQuery.size() != 4) {
+    //     cout << "SYNTAX ERROR: Please give 4 arguments in this format: INSERT INTO table_name (col1=val1, col2=val2)" << endl;
+    //     return false;
+    // }
 
-    if(tokenizedQuery.size()!=4){
-        cout<<"SYNATX ERROR: PLEASE GIVE 4 Arguments in this format: INSERT INTO table_name (values)"<<endl;
+    if (tokenizedQuery[1] != "INTO") {
+        cout << "SYNTAX ERROR: Please make sure 2nd argument is INTO" << endl;
         return false;
     }
+
     parsedQuery.queryType = INSERT;
     parsedQuery.loadRelationName = tokenizedQuery[2];
-    if(tokenizedQuery[1] != "INTO"){
-        cout << "SYNTAX ERROR: Please make sure 2nd argument is INTO" << endl;
+    string valueStr = tokenizedQuery[3];  // "(col1=1,col2=2)"
+    // Remove parentheses
+    if (valueStr.front() == '(') valueStr.erase(0, 1);
+    if (valueStr.back() == ')') valueStr.pop_back();
+    
+    // Now parse key=value pairs
+    stringstream ss(valueStr);
+    string pair;
+    while (getline(ss, pair, ',')) {
+        size_t pos = pair.find('=');
+        if (pos == string::npos) continue;
+    
+        string key = pair.substr(0, pos);
+        string value = pair.substr(pos + 1);
+    
+        parsedQuery.insertKeyValue[key] = value;
     }
+
+
     return true;
 }
 
-bool semanticParseInsert(){
+
+bool semanticParseInsert() {
     logger.log("semanticParseINSERT");
-    if(tableCatalogue.isTable(parsedQuery.loadRelationName)){
-    }
-    else{
-        cout<<"SEMANTIC ERROR: Table not exist"<<endl;
+
+    if (!tableCatalogue.isTable(parsedQuery.loadRelationName)) {
+        cout << "SEMANTIC ERROR: Table does not exist" << endl;
         return false;
     }
+
+    Table* table = tableCatalogue.getTable(parsedQuery.loadRelationName);
+
+    for (const string& col : table->columns) {
+        cout << col << endl;
+    }
+
+    // Debug print: Parsed key-value pairs
+    cout << "Parsed INSERT values:" << endl;
+    for (auto& [key, val] : parsedQuery.insertKeyValue) {
+        cout << key << " = " << val << endl;
+    }
+
     return true;
 }
-
 
 
 
 void executeINSERT() {
-    logger.log("executeGROUPBY");
+    logger.log("executeINSERT");
     cout << "EXECUTING INSERT OPERATION" << endl;
-    cout << "Will Implement this operation soon...." << endl;
+
+    Table* table = tableCatalogue.getTable(parsedQuery.loadRelationName);
+
+    vector<string> row;
+    for (const string& col : table->columns) {
+        row.push_back(parsedQuery.insertKeyValue[col]);
+    }
+
+    table->insertRow(row);
 }
