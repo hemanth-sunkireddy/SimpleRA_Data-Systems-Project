@@ -29,6 +29,7 @@ enum QueryType
     CHECKANTISYM,
     INSERT,
     SEARCH,
+    DELETE,
     UNDETERMINED
 };
 
@@ -126,6 +127,12 @@ public:
     string searchColumnName = "";
     BinaryOperator searchBinaryOperator = NO_BINOP_CLAUSE;
     int searchIntLiteral = 0;
+    
+    // DELETE COMMAND
+    string deleteRelationName = "";
+    string deleteColumnName = "";
+    BinaryOperator deleteBinaryOperator = NO_BINOP_CLAUSE;
+    int deleteIntLiteral = 0;
 
     SortingStrategy sortingStrategy = NO_SORT_CLAUSE;
     string sortResultRelationName = "";
@@ -173,6 +180,7 @@ bool syntacticParseGROUP_BY();
 bool syntacticParseORDERBY();
 bool syntaticParseInsert();
 bool syntacticParseSEARCH();
+bool syntacticParseDELETE();
 
 bool isFileExists(string tableName);
 bool isQueryFile(string fileName);

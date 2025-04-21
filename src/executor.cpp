@@ -27,6 +27,7 @@ void executeCommand(){
         case CROSSTRANSPOSE: executeCROSSTRANSPOSE(); break;
         case CHECKANTISYM: executeCHECKANTISYM(); break;
         case INSERT: executeINSERT(); break;
+        case DELETE: executeDELETE(); break;
         default: cout<<"PARSING ERROR"<<endl;
     }
 

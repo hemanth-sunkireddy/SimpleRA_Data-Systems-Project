@@ -27,6 +27,7 @@ bool semanticParse(){
         case CROSSTRANSPOSE: return semanticParseCROSSTRANSPOSE();
         case CHECKANTISYM: return semanticParseCHECKANTISYM();
         case INSERT: return semanticParseInsert();
+        case DELETE: return semanticParseDELETE();
         default: cout<<"SEMANTIC ERROR"<<endl;
     }
 

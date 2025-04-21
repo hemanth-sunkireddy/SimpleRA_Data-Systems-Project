@@ -61,6 +61,8 @@ bool syntacticParse()
         return syntacticParseORDERBY();
     else if(tokenizedQuery[0] == "INSERT")
         return syntaticParseInsert();
+    else if(tokenizedQuery[0] == "DELETE")
+        return syntacticParseDELETE();
     else
     {
         string resultantRelationName = possibleQueryType;
