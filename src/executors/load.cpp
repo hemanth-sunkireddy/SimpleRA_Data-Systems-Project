@@ -65,6 +65,7 @@ bool semanticParseLOAD_MATRIX (){
 void executeLOAD()
 {
     logger.log("executeLOAD");
+    cout << "EXECUTING LOADING..." << endl;
     Table *table = new Table(parsedQuery.loadRelationName);
     // cout << "LOADING : " << parsedQuery.loadRelationName << endl;
     // cout << "PATH : " << table->sourceFileName << endl;
