@@ -323,25 +323,37 @@ bool syntaticParseUpdate() {
 
     // Parse WHERE clause (col1=2)
     string whereClause = tokenizedQuery[3];
-    size_t wherePos = whereClause.find('==');
-    cout << "WHERE POSITION: " << wherePos << endl;
-    int len = whereClause.size();
-    cout << "WHERE CLAUSE SIZE: " << len << endl;
-    if (wherePos == string::npos) {
-        cout << "SYNTAX ERROR: WHERE clause must be in the format col=val" << endl;
+
+    vector<pair<string, BinaryOperator>> operators = {
+        {"==", EQUAL},
+        {"<=", LEQ},
+        {">=", GEQ},
+        {"!=", NOT_EQUAL},
+        {"<",  LESS_THAN},
+        {">",  GREATER_THAN}
+    };
+
+    bool matched = false;
+    for (auto& [opStr, opEnum] : operators) {
+        size_t opPos = whereClause.find(opStr);
+        if (opPos != string::npos) {
+            parsedQuery.updateWhereColumn = whereClause.substr(0, opPos);
+            parsedQuery.updateWhereValue = whereClause.substr(opPos + opStr.size());
+            parsedQuery.updateOperator = opEnum;
+            matched = true;
+            break;
+        }
+    }
+    cout << "UPDATE COLUMN: " << parsedQuery.updateWhereColumn << endl;
+    cout << "UPDATE VALUE: " << parsedQuery.updateWhereValue << endl;
+
+    if (parsedQuery.updateOperator == LESS_THAN) cout << "HELLO" << endl;
+    if (!matched) {
+        cout << "SYNTAX ERROR: WHERE clause must contain a valid operator (==, !=, <, <=, >, >=)" << endl;
         return false;
     }
-    parsedQuery.updateWhereColumn = whereClause.substr(0, wherePos);
-    cout << parsedQuery.updateWhereColumn << endl;
-    cout << "WHERE CLAUSE: " << whereClause << endl;
-    string value_cond = whereClause.substr(wherePos + 2);
-    cout << "VALUE CONDITION: " << value_cond << endl;
-    // cout << parsedQuery.updateWhereValue << endl;
-    cout << "HELLO" << endl;
-    // Parse SET clause
-    parsedQuery.updateWhereValue = value_cond;
-    cout << "HELLO" << endl;
-    cout << parsedQuery.updateWhereValue << endl;
+
+
     string setColumn = tokenizedQuery[5];
     string setValue = tokenizedQuery[7];
     parsedQuery.insertKeyValue.clear();
@@ -360,9 +372,17 @@ bool semanticParseUpdate()
         cout << "SEMANTIC ERROR: Table does not exist" << endl;
         return false;
     }
+    cout << "CHECK CONDITION HERE" << endl;
+    cout << "isTable(" << parsedQuery.loadRelationName << "): " 
+    << tableCatalogue.isTable(parsedQuery.loadRelationName) << endl;
 
     Table *table = tableCatalogue.getTable(parsedQuery.loadRelationName);
-
+    if (table == nullptr)
+{
+    cout << "SEMANTIC ERROR: Table pointer is null" << endl;
+    return false;
+}
+    cout << "CHECK HERE ALSO" << endl;
     for (const string &col : table->columns)
     {
         cout << col << endl;

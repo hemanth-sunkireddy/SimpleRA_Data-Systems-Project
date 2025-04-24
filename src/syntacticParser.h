@@ -157,6 +157,7 @@ public:
 
     string updateWhereColumn = "";
     string updateWhereValue = "";
+    BinaryOperator updateOperator = NO_BINOP_CLAUSE;
 };
 
 bool syntacticParse();

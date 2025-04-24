@@ -2089,7 +2089,6 @@ void Table::insertRow(const vector<string>& rowStrVec) {
     }
 
     // Step 9: (Optional) Update B+ Tree Index
-    // You can uncomment and debug this later
     for (auto& [colName, indexInfo] : this->indices) {
         if (indexInfo->strategy == BTREE && indexInfo->bPlusTreeIndex != nullptr) {
             int colIdx = this->getColumnIndex(colName);
@@ -2152,7 +2151,7 @@ void Table::updateRow(const vector<string>& rowStrVec) {
                 int searchKey = stoi(parsedQuery.updateWhereValue);
                 cout << "Searching in B+ Tree for " << colName << " = " << searchKey << "\n";
     
-                vector<int> matchingRowIndices = indexInfo->bPlusTreeIndex->search(searchKey, EQUAL);
+                vector<int> matchingRowIndices = indexInfo->bPlusTreeIndex->search(searchKey, parsedQuery.updateOperator);
                 cout << "Found " << matchingRowIndices.size() << " matching rows:\n";
     
                 for (int rowId : matchingRowIndices) {
