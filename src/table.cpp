@@ -1980,7 +1980,143 @@ void Table::insertRow(const vector<string>& rowStrVec) {
 
     // Step 1: Parse strings to integers and handle invalid/missing values
     vector<int> row;
-    cout << "Parsing input row:\n";
+    // cout << "Parsing input row:\n";
+    for (auto val : rowStrVec) {
+        if (val.empty()) {
+            // cout << " - Empty value, inserting 0\n";
+            row.push_back(0);
+        } else {
+            try {
+                int intVal = stoi(val);
+                // cout << " - Parsed value: " << intVal << "\n";
+                row.push_back(intVal);
+            } catch (...) {
+                // cout << " - Invalid integer format, inserting 0 for value: " << val << "\n";
+                row.push_back(0);
+            }
+        }
+    }
+
+    // cout << "Final parsed row: ";
+    // for (auto ro : row) cout << ro << " ";
+    // cout << endl;
+
+    // Step 2: Update total row count
+    this->rowCount++;
+    // cout << "Updated row count: " << this->rowCount << endl;
+
+    // Step 3: Block initialization if this is the first insert
+    if (this->rowsPerBlockCount.empty()) {
+        this->rowsPerBlockCount.push_back(0);
+        this->blockCount = 1;
+        // cout << "Initialized first block.\n";
+    }
+
+    // Step 4: Determine current block state
+    int lastBlockIndex = this->blockCount - 1;
+    int rowsInLastBlock = this->rowsPerBlockCount[lastBlockIndex];
+    int maxRows = this->maxRowsPerBlock;
+
+    // cout << "Current block index: " << lastBlockIndex << "\n";
+    // cout << "Rows in last block: " << rowsInLastBlock << "\n";
+    // cout << "Max rows per block: " << maxRows << "\n";
+
+    vector<vector<int>> pageData;
+
+    // Step 5: Load page data if block is not full
+    if (rowsInLastBlock < maxRows) {
+        Page page = bufferManager.getPage(this->tableName, lastBlockIndex);
+        pageData = page.getAllRows();
+        // cout << "Loaded existing page data. Page row count: " << pageData.size() << "\n";
+    } else {
+        // cout << "Last block is full. Preparing to create a new block.\n";
+    }
+
+    // Step 6: Print before resizing (if necessary)
+    int validRows = this->rowsPerBlockCount[lastBlockIndex];
+    // cout << "Valid (already filled) rows in block: " << validRows << "\n";
+
+    if ((int)pageData.size() > validRows) {
+        // cout << "Resizing page data from size " << pageData.size() << " to " << validRows << "\n";
+        pageData.resize(validRows); // Drop any garbage or extra rows
+    }
+
+    // Step 7: Determine whether to insert into new block or current
+    if (rowsInLastBlock + 1 > maxRows) {
+        // Step 7A: New block needed
+        // cout << "New block being created for insertion.\n";
+        this->rowsPerBlockCount.push_back(1);
+        this->blockCount++;
+        vector<vector<int>> newPageData = {row};
+        bufferManager.writePage(this->tableName, lastBlockIndex + 1, newPageData, 1);
+        // cout << "New page written to block index: " << (lastBlockIndex + 1) << "\n";
+    } else {
+        // Step 7B: Insert into current block
+        Page page = bufferManager.getPage(this->tableName, lastBlockIndex);
+        pageData = page.getAllRows();
+        if ((int)pageData.size() < validRows + 1) {
+            // cout << "Resizing page data to accommodate new row: " << (validRows + 1) << "\n";
+            pageData.resize(validRows + 1);
+        }
+
+        // cout << "Inserting row at index: " << validRows << " in block: " << lastBlockIndex << "\n";
+        pageData[validRows] = row;
+
+        // Debug print updated pageData
+        // cout << "Updated Page Data (Block " << lastBlockIndex << "):\n";
+        // for (const auto &r : pageData) {
+        //     for (int v : r) cout << v << " ";
+        //     cout << "\n";
+        // }
+
+        // This line wrongly increments blockCount even when not needed (remove it)
+        // this->blockCount++;
+
+        // Update internal metadata
+        this->rowsPerBlockCount[lastBlockIndex]++;
+
+        // Write back to buffer
+        bufferManager.writePage(this->tableName, lastBlockIndex, pageData, validRows + 1);
+        // cout << "Page written back to buffer manager.\n";
+    }
+
+    // Step 8: Print current B+ Tree Indices
+    cout << "Current B+ Tree Indices in Table:\n";
+    for (auto& [colName, indexInfo] : this->indices) {
+        if (indexInfo->strategy == BTREE && indexInfo->bPlusTreeIndex != nullptr) {
+            cout << " - Column: " << colName << ", Index exists\n";
+        }
+    }
+
+    // Step 9: (Optional) Update B+ Tree Index
+    // You can uncomment and debug this later
+    for (auto& [colName, indexInfo] : this->indices) {
+        if (indexInfo->strategy == BTREE && indexInfo->bPlusTreeIndex != nullptr) {
+            int colIdx = this->getColumnIndex(colName);
+            if (colIdx >= 0 && colIdx < (int)row.size()) {
+                int key = row[colIdx];
+                indexInfo->bPlusTreeIndex->insert(key, this->rowCount - 1);
+                cout << "Inserted into B+ Tree Index for " << colName << ": key=" << key << ", row=" << this->rowCount - 1 << "\n";
+            }
+        }
+    }
+
+    // Step 10: Final operations
+    cout << "Calling makePermanent...\n";
+    // this->makePermanent();
+
+    cout << "Updating statistics...\n";
+    this->updateStatistics(row);
+
+    cout << "INSERTION SUCCESS ✅\n";
+}
+
+void Table::updateRow(const vector<string>& rowStrVec) {
+    logger.log("Table::insertRow");
+
+    // Step 1: Parse strings to integers and handle invalid/missing values
+    vector<int> row;
+    cout << "Parsing update row:\n";
     for (auto val : rowStrVec) {
         if (val.empty()) {
             cout << " - Empty value, inserting 0\n";
@@ -1997,88 +2133,10 @@ void Table::insertRow(const vector<string>& rowStrVec) {
         }
     }
 
-    cout << "Final parsed row: ";
+    cout << "Final parsed update row: ";
     for (auto ro : row) cout << ro << " ";
     cout << endl;
 
-    // Step 2: Update total row count
-    this->rowCount++;
-    cout << "Updated row count: " << this->rowCount << endl;
-
-    // Step 3: Block initialization if this is the first insert
-    if (this->rowsPerBlockCount.empty()) {
-        this->rowsPerBlockCount.push_back(0);
-        this->blockCount = 1;
-        cout << "Initialized first block.\n";
-    }
-
-    // Step 4: Determine current block state
-    int lastBlockIndex = this->blockCount - 1;
-    int rowsInLastBlock = this->rowsPerBlockCount[lastBlockIndex];
-    int maxRows = this->maxRowsPerBlock;
-
-    cout << "Current block index: " << lastBlockIndex << "\n";
-    cout << "Rows in last block: " << rowsInLastBlock << "\n";
-    cout << "Max rows per block: " << maxRows << "\n";
-
-    vector<vector<int>> pageData;
-
-    // Step 5: Load page data if block is not full
-    if (rowsInLastBlock < maxRows) {
-        Page page = bufferManager.getPage(this->tableName, lastBlockIndex);
-        pageData = page.getAllRows();
-        cout << "Loaded existing page data. Page row count: " << pageData.size() << "\n";
-    } else {
-        cout << "Last block is full. Preparing to create a new block.\n";
-    }
-
-    // Step 6: Print before resizing (if necessary)
-    int validRows = this->rowsPerBlockCount[lastBlockIndex];
-    cout << "Valid (already filled) rows in block: " << validRows << "\n";
-
-    if ((int)pageData.size() > validRows) {
-        cout << "Resizing page data from size " << pageData.size() << " to " << validRows << "\n";
-        pageData.resize(validRows); // Drop any garbage or extra rows
-    }
-
-    // Step 7: Determine whether to insert into new block or current
-    if (rowsInLastBlock + 1 > maxRows) {
-        // Step 7A: New block needed
-        cout << "New block being created for insertion.\n";
-        this->rowsPerBlockCount.push_back(1);
-        this->blockCount++;
-        vector<vector<int>> newPageData = {row};
-        bufferManager.writePage(this->tableName, lastBlockIndex + 1, newPageData, 1);
-        cout << "New page written to block index: " << (lastBlockIndex + 1) << "\n";
-    } else {
-        // Step 7B: Insert into current block
-        Page page = bufferManager.getPage(this->tableName, lastBlockIndex);
-        pageData = page.getAllRows();
-        if ((int)pageData.size() < validRows + 1) {
-            cout << "Resizing page data to accommodate new row: " << (validRows + 1) << "\n";
-            pageData.resize(validRows + 1);
-        }
-
-        cout << "Inserting row at index: " << validRows << " in block: " << lastBlockIndex << "\n";
-        pageData[validRows] = row;
-
-        // Debug print updated pageData
-        cout << "Updated Page Data (Block " << lastBlockIndex << "):\n";
-        for (const auto &r : pageData) {
-            for (int v : r) cout << v << " ";
-            cout << "\n";
-        }
-
-        // This line wrongly increments blockCount even when not needed (remove it)
-        // this->blockCount++;
-
-        // Update internal metadata
-        this->rowsPerBlockCount[lastBlockIndex]++;
-
-        // Write back to buffer
-        bufferManager.writePage(this->tableName, lastBlockIndex, pageData, validRows + 1);
-        cout << "Page written back to buffer manager.\n";
-    }
 
     // Step 8: Print current B+ Tree Indices
     cout << "Current B+ Tree Indices in Table:\n";
@@ -2089,27 +2147,24 @@ void Table::insertRow(const vector<string>& rowStrVec) {
     }
 
     // Step 9: (Optional) Update B+ Tree Index
-    // You can uncomment and debug this later
-    /*
-    for (auto& [colName, indexInfo] : this->indices) {
-        if (indexInfo->strategy == BTREE && indexInfo->bPlusTreeIndex != nullptr) {
-            int colIdx = this->getColumnIndex(colName);
-            if (colIdx >= 0 && colIdx < (int)row.size()) {
-                int key = row[colIdx];
-                indexInfo->bPlusTreeIndex->insert(key, this->rowCount - 1);
-                cout << "Inserted into B+ Tree Index for " << colName << ": key=" << key << ", row=" << this->rowCount - 1 << "\n";
-            }
-        }
-    }
-    */
+    // for (auto& [colName, indexInfo] : this->indices) {
+    //     if (indexInfo->strategy == BTREE && indexInfo->bPlusTreeIndex != nullptr) {
+    //         int colIdx = this->getColumnIndex(colName);
+    //         if (colIdx >= 0 && colIdx < (int)row.size()) {
+    //             int key = row[colIdx];
+    //             indexInfo->bPlusTreeIndex->insert(key, this->rowCount - 1);
+    //             cout << "Inserted into B+ Tree Index for " << colName << ": key=" << key << ", row=" << this->rowCount - 1 << "\n";
+    //         }
+    //     }
+    // }
 
     // Step 10: Final operations
-    cout << "Calling makePermanent...\n";
-    this->makePermanent();
+    // cout << "Calling makePermanent...\n";
+    // this->makePermanent();
 
     cout << "Updating statistics...\n";
     this->updateStatistics(row);
 
-    cout << "INSERTION SUCCESS ✅\n";
+    cout << "UPDATE OPERATION: Minor Changes are left, will update soon";
 }
 

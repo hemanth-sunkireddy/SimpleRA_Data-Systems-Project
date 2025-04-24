@@ -28,6 +28,7 @@ enum QueryType
     ROTATE_MATRIX,
     CHECKANTISYM,
     INSERT,
+    UPDATE,
     SEARCH,
     DELETE,
     UNDETERMINED
@@ -153,6 +154,9 @@ public:
     ParsedQuery();
     void clear();
     unordered_map<string, string> insertKeyValue;
+
+    string updateWhereColumn = "";
+    string updateWhereValue = "";
 };
 
 bool syntacticParse();
@@ -179,6 +183,7 @@ bool syntacticParseCHECKANTISYM();
 bool syntacticParseGROUP_BY();
 bool syntacticParseORDERBY();
 bool syntaticParseInsert();
+bool syntaticParseUpdate();
 bool syntacticParseSEARCH();
 bool syntacticParseDELETE();
 

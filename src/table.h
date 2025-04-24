@@ -79,6 +79,7 @@ public:
     void joinTables();
     void orderBy();
     void insertRow(const vector<string>& row);
+    void updateRow(const vector<string>& row);
     void deleteRows(const vector<int>& rowIndices);
     void rebalanceBlocks();
     

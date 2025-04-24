@@ -302,3 +302,94 @@ void executeINSERT()
 
     table->insertRow(row);
 }
+
+
+bool syntaticParseUpdate() {
+    logger.log("syntacticParseUPDATE()");
+    cout << "UPDATE OPERATION" << endl;
+
+    if (tokenizedQuery.size() != 8) {
+        cout << "SYNTAX ERROR: Expected format -> UPDATE table_name WHERE col=val SET col = val" << endl;
+        return false;
+    }
+
+    if (tokenizedQuery[2] != "WHERE" || tokenizedQuery[4] != "SET" || tokenizedQuery[6] != "=") {
+        cout << "SYNTAX ERROR: Check that you used 'WHERE', 'SET' and '=' properly." << endl;
+        return false;
+    }
+
+    parsedQuery.queryType = UPDATE;
+    parsedQuery.loadRelationName = tokenizedQuery[1];
+
+    // Parse WHERE clause (col1=2)
+    string whereClause = tokenizedQuery[3];
+    size_t wherePos = whereClause.find('==');
+    cout << "WHERE POSITION: " << wherePos << endl;
+    int len = whereClause.size();
+    cout << "WHERE CLAUSE SIZE: " << len << endl;
+    if (wherePos == string::npos) {
+        cout << "SYNTAX ERROR: WHERE clause must be in the format col=val" << endl;
+        return false;
+    }
+    parsedQuery.updateWhereColumn = whereClause.substr(0, wherePos);
+    cout << parsedQuery.updateWhereColumn << endl;
+    cout << "WHERE CLAUSE: " << whereClause << endl;
+    string value_cond = whereClause.substr(wherePos + 2);
+    cout << "VALUE CONDITION: " << value_cond << endl;
+    // cout << parsedQuery.updateWhereValue << endl;
+    cout << "HELLO" << endl;
+    // Parse SET clause
+    parsedQuery.updateWhereValue = value_cond;
+    cout << "HELLO" << endl;
+    cout << parsedQuery.updateWhereValue << endl;
+    string setColumn = tokenizedQuery[5];
+    string setValue = tokenizedQuery[7];
+    parsedQuery.insertKeyValue.clear();
+    parsedQuery.insertKeyValue[setColumn] = setValue;
+    
+    return true;
+}
+
+
+bool semanticParseUpdate()
+{
+    logger.log("semanticParseUPDATE");
+    cout << "SEMANTIC PARSER UPDATE" << endl;
+    if (!tableCatalogue.isTable(parsedQuery.loadRelationName))
+    {
+        cout << "SEMANTIC ERROR: Table does not exist" << endl;
+        return false;
+    }
+
+    Table *table = tableCatalogue.getTable(parsedQuery.loadRelationName);
+
+    for (const string &col : table->columns)
+    {
+        cout << col << endl;
+    }
+
+    // Debug print: Parsed key-value pairs
+    cout << "Parsed update values:" << endl;
+    for (auto &[key, val] : parsedQuery.insertKeyValue)
+    {
+        cout << key << " = " << val << endl;
+    }
+
+    return true;
+}
+
+void executeUPDATE()
+{
+    logger.log("executeINSERT");
+    cout << "EXECUTING UPDATE OPERATION" << endl;
+
+    Table *table = tableCatalogue.getTable(parsedQuery.loadRelationName);
+
+    vector<string> row;
+    for (const string &col : table->columns)
+    {
+        row.push_back(parsedQuery.insertKeyValue[col]);
+    }
+
+    table->updateRow(row);
+}
