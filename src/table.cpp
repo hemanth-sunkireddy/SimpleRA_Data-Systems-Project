@@ -2145,18 +2145,42 @@ void Table::updateRow(const vector<string>& rowStrVec) {
             cout << " - Column: " << colName << ", Index exists\n";
         }
     }
-
-    // Step 9: (Optional) Update B+ Tree Index
-    // for (auto& [colName, indexInfo] : this->indices) {
-    //     if (indexInfo->strategy == BTREE && indexInfo->bPlusTreeIndex != nullptr) {
-    //         int colIdx = this->getColumnIndex(colName);
-    //         if (colIdx >= 0 && colIdx < (int)row.size()) {
-    //             int key = row[colIdx];
-    //             indexInfo->bPlusTreeIndex->insert(key, this->rowCount - 1);
-    //             cout << "Inserted into B+ Tree Index for " << colName << ": key=" << key << ", row=" << this->rowCount - 1 << "\n";
-    //         }
-    //     }
-    // }
+    for (auto& [colName, indexInfo] : this->indices) {
+        if (indexInfo->strategy == BTREE && indexInfo->bPlusTreeIndex != nullptr) {
+            int colIdx = this->getColumnIndex(colName);
+            if (colIdx >= 0 && colIdx < (int)row.size()) {
+                int searchKey = stoi(parsedQuery.updateWhereValue);
+                cout << "Searching in B+ Tree for " << colName << " = " << searchKey << "\n";
+    
+                vector<int> matchingRowIndices = indexInfo->bPlusTreeIndex->search(searchKey, EQUAL);
+                cout << "Found " << matchingRowIndices.size() << " matching rows:\n";
+    
+                for (int rowId : matchingRowIndices) {
+                    int blockIndex = rowId / this->maxRowsPerBlock;
+                    int offsetInBlock = rowId % this->maxRowsPerBlock;
+    
+                    // Step 1: Fetch the page using getPage
+                    Page page = bufferManager.getPage(this->tableName, blockIndex);
+                    vector<vector<int>> pageData = page.getAllRows();
+    
+                    // Step 2: Print current row
+                    cout << "Before Update (rowId " << rowId << "): ";
+                    for (int val : pageData[offsetInBlock]) cout << val << " ";
+                    cout << endl;
+    
+                    // Step 3: Perform the update
+                    pageData[offsetInBlock] = row;
+    
+                    // Step 4: Write updated page back
+                    bufferManager.writePage(this->tableName, blockIndex, pageData, pageData.size());
+    
+                    cout << "Updated rowId " << rowId << " with new values.\n";
+                }
+            }
+            break; // Only using one B+ Tree index to filter
+        }
+    }
+    
 
     // Step 10: Final operations
     // cout << "Calling makePermanent...\n";
@@ -2165,6 +2189,6 @@ void Table::updateRow(const vector<string>& rowStrVec) {
     cout << "Updating statistics...\n";
     this->updateStatistics(row);
 
-    cout << "UPDATE OPERATION: Minor Changes are left, will update soon";
+    cout << "UPDATE OPERATION done.";
 }
 
