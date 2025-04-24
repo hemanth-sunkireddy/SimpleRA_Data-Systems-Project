@@ -1,3 +1,9 @@
 data/temp/
 .vscode
 data/*.csv
+docs
+src/*.o
+src/executors/*o
+LICENSE
+Report.md
+Report2.md
